@@ -1,0 +1,32 @@
+{
+  "name": "vue-demo",
+  "version": "1.0.0",
+  "description": "",
+  "main": "fis-conf.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.16.1",
+    "buffer": "^5.0.6",
+    "fis-optimizer-html-minifier": "0.0.9",
+    "fis-parser-babel-5.x": "^1.4.0",
+    "fis-parser-babel-6.x": "^6.24.1",
+    "fis-postprocessor-jswrapper": "0.0.14",
+    "fis3-hook-amd": "^0.2.0",
+    "fis3-hook-commonjs": "^0.1.26",
+    "fis3-hook-module": "^1.2.2",
+    "fis3-hook-node_modules": "^2.2.8",
+    "fis3-packager-deps-pack": "^0.1.2",
+    "fis3-parser-vue-component": "^5.4.0",
+    "fis3-preprocessor-autoprefixer": "^0.1.1",
+    "fis3-preprocessor-js-require-css": "^0.1.1",
+    "fis3-preprocessor-js-require-file": "^0.1.3",
+    "jquery": "^3.2.1",
+    "vue": "^2.3.3",
+    "vue-router": "^2.5.3",
+    "vue-template-compiler": "^2.3.3"
+  }
+}
