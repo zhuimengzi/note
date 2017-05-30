@@ -102,7 +102,75 @@ function(){};
 ()也是会进行运算的
 
 ```javascript
-(1)
+(1) // 1
+```
+
+### 非惰性求值
+
+只要你给函数传递参数它就会进行运算，并不会因为你没有使用它
+
+```javascript
+var a = 10;
+(function(){}(a++,a++));
+console.log(a); // 12
+```
+
+非惰性求值得另外一个例子就是在使用alert时
+
+```javascript
+var a = 1;
+alert(a+=1,a++); // 2
+console.log(a); // 3
+```
+
+第一个输出2是因为alert只接受一个参数，但由于函数是不限制参数个数的并且是非惰性求值所以alert中的第二个参数还是会被运算只是没有被alert使用罢了
+
+### 函数中的callee、caller
+
+callee的意义就在于当我们使用匿名函数时可以去调用函数本身
+
+```javascript
+var a = 0;
+(function(){
+	if(a > 3) return;
+	console.log(++a);
+	arguments.callee();
+}());
 // 1
+// 2
+// 3
+// 4
+```
+
+还有一种情况是当我们重写函数时
+
+```javascript
+var a = 0;
+function foo(){
+	if(a > 2)return;
+	console.log(++a);
+	foo = null;
+	arguments.callee();
+}
+foo()
+// 1
+// 2
+// 3
+```
+
+caller的意义就在于我们能够知道此函数是被谁调用的
+
+```javascript
+function f1(){
+	f2();
+}
+function f2(){
+	console.log(arguments.callee.caller);
+}
+f1();
+/* function f1(){
+	f2();
+}
+/*
 ```
 
