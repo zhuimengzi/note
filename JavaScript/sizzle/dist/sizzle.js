@@ -56,6 +56,7 @@ var i,
 	slice = arr.slice,
 	// Use a stripped-down indexOf as it's faster than native
 	// https://jsperf.com/thor-indexof-vs-for/5
+  // 返回元素在数组中的索引位置
 	indexOf = function( list, elem ) {
 		var i = 0,
 			len = list.length;
@@ -125,7 +126,7 @@ var i,
 	// 判断选择器是否为input、select、textarea、button，忽略大小写
 	rinputs = /^(?:input|select|textarea|button)$/i,
 	rheader = /^h\d$/i,
-
+	// 判断是否为原生方法
 	rnative = /^[^{]+\{\s*\[native \w/,
 
 	// 判断选择器是否为id、tag、class
@@ -184,29 +185,31 @@ var i,
 		{ dir: "parentNode", next: "legend" }
 	);
 
-// Optimize for push.apply( _, NodeList )
+// 优化push.apply( _, NodeList )
 try {
+	// 合并两个数组
 	push.apply(
+		// 将伪数组转换为真数组
 		(arr = slice.call( preferredDoc.childNodes )),
 		preferredDoc.childNodes
 	);
-	// Support: Android<4.0
-	// Detect silently failing push.apply
+	// 检测Android<4.0
+  // 如果push静默的失败，下面这句会抛出错误
 	arr[ preferredDoc.childNodes.length ].nodeType;
 } catch ( e ) {
 	push = { apply: arr.length ?
 
-		// Leverage slice if possible
+		// 使用原生push合并两个数组
 		function( target, els ) {
 			push_native.apply( target, slice.call(els) );
 		} :
 
 		// Support: IE<9
-		// Otherwise append directly
+		// 手动合并两个数组
 		function( target, els ) {
 			var j = target.length,
 				i = 0;
-			// Can't trust NodeList.length
+			// 不能信任NodeList.length值，手动设置length
 			while ( (target[j++] = els[i++]) ) {}
 			target.length = j - 1;
 		}
@@ -264,12 +267,10 @@ function Sizzle( selector, context, results, seed ) {
 							return results;
 						}
 
-					// Element context
+					// 有元素上下文
 					} else {
 
-						// Support: IE, Opera, Webkit
-						// TODO: identify versions
-						// getElementById can match elements by name instead of ID
+						// 如果上下文存在且不是document并且在上下文中能够获取到该元素且该元素与上下文为包含关系或是同一个元素且此元素的id等于正则匹配出来的id
 						if ( newContext && (elem = newContext.getElementById( m )) &&
 							contains( context, elem ) &&
 							elem.id === m ) {
@@ -279,21 +280,24 @@ function Sizzle( selector, context, results, seed ) {
 						}
 					}
 
-				// Type selector
+				// 标签选择器
 				} else if ( match[2] ) {
+					// 将获取到的元素与results合并
 					push.apply( results, context.getElementsByTagName( selector ) );
 					return results;
 
-				// Class selector
+				// Class选择器
+				// 判断是否支持getElementsByClassName方法，感觉这里判断有些多此一举了判断了两次getElementsByClassName是否存在
 				} else if ( (m = match[3]) && support.getElementsByClassName &&
 					context.getElementsByClassName ) {
-
+					// 将获取到的元素与results进行合并
 					push.apply( results, context.getElementsByClassName( m ) );
 					return results;
 				}
 			}
 
-			// Take advantage of querySelectorAll
+			// 使用querySelectorAll方法
+			// 如果querySelectorAll方法存在并且之前没有缓存
 			if ( support.qsa &&
 				!compilerCache[ selector + " " ] &&
 				(!rbuggyQSA || !rbuggyQSA.test( selector )) ) {
@@ -350,18 +354,18 @@ function Sizzle( selector, context, results, seed ) {
 }
 
 /**
- * Create key-value caches of limited size
+ * Create key-value caches of limited size 创建有限大小的键值缓存
  * @returns {function(string, object)} Returns the Object data after storing it on itself with
  *	property name the (space-suffixed) string and (if the cache is larger than Expr.cacheLength)
- *	deleting the oldest entry
+ *	deleting the oldest entry 将对象数据存储并返回，如果缓存大于Expr.cacheLength）则删除最旧的条目
  */
 function createCache() {
 	var keys = [];
 
 	function cache( key, value ) {
-		// Use (key + " ") to avoid collision with native prototype properties (see Issue #157)
+		// 使用 (key + " ") 避免与原生原型属性相冲突
 		if ( keys.push( key + " " ) > Expr.cacheLength ) {
-			// Only keep the most recent entries
+			// 只保留最近的条目
 			delete cache[ keys.shift() ];
 		}
 		return (cache[ key + " " ] = value);
@@ -379,9 +383,10 @@ function markFunction( fn ) {
 }
 
 /**
- * Support testing using an element
  * @param {Function} fn Passed the created element and returns a boolean result
  */
+// 使用元素进行测试querySelectorAll是否存在bug
+// 返回一个布尔结果
 function assert( fn ) {
 	var el = document.createElement("fieldset");
 
@@ -390,20 +395,20 @@ function assert( fn ) {
 	} catch (e) {
 		return false;
 	} finally {
-		// Remove from its parent by default
+		// 删除测试元素
 		if ( el.parentNode ) {
 			el.parentNode.removeChild( el );
 		}
-		// release memory in IE
+		// 在IE中释放内存
 		el = null;
 	}
 }
 
 /**
- * Adds the same handler for all of the specified attrs
- * @param {String} attrs Pipe-separated list of attributes
- * @param {Function} handler The method that will be applied
- */
+*为所有指定的attrs添加相同的处理程序
+* @param {String} attrs管道分隔的属性列表
+* @param {Function} handler将要应用的方法
+*/
 function addHandle( attrs, handler ) {
 	var arr = attrs.split("|"),
 		i = arr.length;
@@ -550,7 +555,7 @@ function testContext( context ) {
 	return context && typeof context.getElementsByTagName !== "undefined" && context;
 }
 
-// Expose support vars for convenience
+// 为了使用方便，公共暴露出来的变量
 support = Sizzle.support = {};
 
 /**
@@ -619,7 +624,7 @@ setDocument = Sizzle.setDocument = function( node ) {
 		return !el.getElementsByTagName("*").length;
 	});
 
-	// Support: IE<9
+	// 判断是否支持原生getElementsByClassName方法
 	support.getElementsByClassName = rnative.test( document.getElementsByClassName );
 
 	// Support: IE<10
@@ -739,24 +744,16 @@ setDocument = Sizzle.setDocument = function( node ) {
 	// So, we allow :focus to pass through QSA all the time to avoid the IE error
 	// See https://bugs.jquery.com/ticket/13378
 	rbuggyQSA = [];
-
+	// 判断是否支持querySelectorAll方法
 	if ( (support.qsa = rnative.test( document.querySelectorAll )) ) {
-		// Build QSA regex
-		// Regex strategy adopted from Diego Perini
+		// 测试querySelectorAll是否存在bug，并将bug存入到rbuggyQSA数组中
 		assert(function( el ) {
-			// Select is set to empty string on purpose
-			// This is to test IE's treatment of not explicitly
-			// setting a boolean content attribute,
-			// since its presence should be enough
-			// https://bugs.jquery.com/ticket/12359
+			// 创建一些测试元素
 			docElem.appendChild( el ).innerHTML = "<a id='" + expando + "'></a>" +
 				"<select id='" + expando + "-\r\\' msallowcapture=''>" +
 				"<option selected=''></option></select>";
 
-			// Support: IE8, Opera 11-12.16
-			// Nothing should be selected when empty strings follow ^= or $= or *=
-			// The test attribute must be unknown in Opera but "safe" for WinRT
-			// https://msdn.microsoft.com/en-us/library/ie/hh465388.aspx#attribute_section
+			// 以下是一些bug测试
 			if ( el.querySelectorAll("[msallowcapture^='']").length ) {
 				rbuggyQSA.push( "[*^$]=" + whitespace + "*(?:''|\"\")" );
 			}
@@ -821,7 +818,7 @@ setDocument = Sizzle.setDocument = function( node ) {
 			rbuggyQSA.push(",.*:");
 		});
 	}
-
+	// 判断是否支持matches方法
 	if ( (support.matchesSelector = rnative.test( (matches = docElem.matches ||
 		docElem.webkitMatchesSelector ||
 		docElem.mozMatchesSelector ||
@@ -829,37 +826,38 @@ setDocument = Sizzle.setDocument = function( node ) {
 		docElem.msMatchesSelector) )) ) {
 
 		assert(function( el ) {
-			// Check to see if it's possible to do matchesSelector
-			// on a disconnected node (IE 9)
+			// IE 9 未插入文档的节点是否适用matchesSelector
 			support.disconnectedMatch = matches.call( el, "*" );
 
-			// This should fail with an exception
-			// Gecko does not error, returns false instead
+			// 这应该失败，但有异常// Gecko不会出错，返回false
 			matches.call( el, "[s!='']:x" );
 			rbuggyMatches.push( "!=", pseudos );
 		});
 	}
-
+	// 将rbuggyQSA、rbuggyMatches转换成字符串放入到正则中
 	rbuggyQSA = rbuggyQSA.length && new RegExp( rbuggyQSA.join("|") );
 	rbuggyMatches = rbuggyMatches.length && new RegExp( rbuggyMatches.join("|") );
 
-	/* Contains
+	/* 判断html是否存在compareDocumentPosition方法，此方法可以判断一个元素与另一个元素直接的位置关系
 	---------------------------------------------------------------------- */
 	hasCompare = rnative.test( docElem.compareDocumentPosition );
 
-	// Element contains another
-	// Purposefully self-exclusive
-	// As in, an element does not contain itself
+	// 元素是否包含另一个元素
+	// 判断浏览器是否支持compareDocumentPosition和contains方法
 	contains = hasCompare || rnative.test( docElem.contains ) ?
 		function( a, b ) {
+			// 如果a是document则返回html，否则返回元素本身
 			var adown = a.nodeType === 9 ? a.documentElement : a,
+				// 如果b存在，返回b的父元素
 				bup = b && b.parentNode;
+				// 如果a是document b也是document则返回true，否则通过contains或compareDocumentPosition方法来判断a和b是否为包含关系
 			return a === bup || !!( bup && bup.nodeType === 1 && (
 				adown.contains ?
 					adown.contains( bup ) :
 					a.compareDocumentPosition && a.compareDocumentPosition( bup ) & 16
 			));
 		} :
+		// 循环判断a和b是否为包含关系
 		function( a, b ) {
 			if ( b ) {
 				while ( (b = b.parentNode) ) {
@@ -1009,25 +1007,25 @@ Sizzle.matchesSelector = function( elem, expr ) {
 };
 
 Sizzle.contains = function( context, elem ) {
-	// Set document vars if needed
+	// 判断是否在同一个document下
 	if ( ( context.ownerDocument || context ) !== document ) {
 		setDocument( context );
 	}
+	// 判断是否为包含关系或者自身
 	return contains( context, elem );
 };
 
 Sizzle.attr = function( elem, name ) {
-	// Set document vars if needed
+	// 判断是否在同一个document下，如果不在则调用setDocument
 	if ( ( elem.ownerDocument || elem ) !== document ) {
 		setDocument( elem );
 	}
-
 	var fn = Expr.attrHandle[ name.toLowerCase() ],
-		// Don't get fooled by Object.prototype properties (jQuery #13807)
+		// 判断name是不是Expr.attrHandle自身的一个方法，如果是则调用该方法并返回val
 		val = fn && hasOwn.call( Expr.attrHandle, name.toLowerCase() ) ?
 			fn( elem, name, !documentIsHTML ) :
 			undefined;
-
+	// 如果val存在直接返回，否则判断是否有attributes属性或者不是html则使用getAttribute获取属性，否则使用getAttributeNode获取属性
 	return val !== undefined ?
 		val :
 		support.attributes || !documentIsHTML ?
@@ -1040,7 +1038,7 @@ Sizzle.attr = function( elem, name ) {
 Sizzle.escape = function( sel ) {
 	return (sel + "").replace( rcssescape, fcssescape );
 };
-
+// 提示错误信息
 Sizzle.error = function( msg ) {
 	throw new Error( "Syntax error, unrecognized expression: " + msg );
 };
@@ -1079,7 +1077,7 @@ Sizzle.uniqueSort = function( results ) {
 };
 
 /**
- * Utility function for retrieving the text value of an array of DOM nodes
+ * 检索DOM节点数组的文本值检索DOM节点数组的文本值
  * @param {Array|Element} elem
  */
 getText = Sizzle.getText = function( elem ) {
@@ -1087,35 +1085,35 @@ getText = Sizzle.getText = function( elem ) {
 		ret = "",
 		i = 0,
 		nodeType = elem.nodeType;
-
+	// 如果elem是一个数组
 	if ( !nodeType ) {
-		// If no nodeType, this is expected to be an array
+		// 循环递归数组
 		while ( (node = elem[i++]) ) {
-			// Do not traverse comment nodes
 			ret += getText( node );
 		}
+	//	如果elem是一个元素节点或document或DocumentFragment
 	} else if ( nodeType === 1 || nodeType === 9 || nodeType === 11 ) {
-		// Use textContent for elements
-		// innerText usage removed for consistency of new lines (jQuery #11153)
+		// 判断是否有textContent属性并返回结果
 		if ( typeof elem.textContent === "string" ) {
 			return elem.textContent;
 		} else {
-			// Traverse its children
+			// 递归其子元素
 			for ( elem = elem.firstChild; elem; elem = elem.nextSibling ) {
 				ret += getText( elem );
 			}
 		}
+	//	如果elem是Text节点或CDATASection节点则返回节点文本内容
 	} else if ( nodeType === 3 || nodeType === 4 ) {
 		return elem.nodeValue;
 	}
-	// Do not include comment or processing instruction nodes
+	// 不包括注释和处理指令节点
 
 	return ret;
 };
 
 Expr = Sizzle.selectors = {
 
-	// Can be adjusted by the user
+	// 可自由调整缓存数
 	cacheLength: 50,
 
 	createPseudo: markFunction,
