@@ -225,7 +225,7 @@ try {
 		}
 	};
 }
-
+// selector：css选择器, context：上下文，results：结果数组，seed：筛选集。
 function Sizzle( selector, context, results, seed ) {
 	var m, i, elem, nid, match, groups, newSelector,
 		// 如果有上下文并且上下文的ownerDocument属性不为false，也就是context不能是document
@@ -297,7 +297,7 @@ function Sizzle( selector, context, results, seed ) {
 					return results;
 
 				// Class选择器
-				// 判断是否支持getElementsByClassName方法，感觉这里判断有些多此一举了判断了两次getElementsByClassName是否存在
+				// 判断是否支持getElementsByClassName方法
 				} else if ( (m = match[3]) && support.getElementsByClassName &&
 					context.getElementsByClassName ) {
 					// 将获取到的元素与results进行合并
@@ -361,7 +361,7 @@ function Sizzle( selector, context, results, seed ) {
 		}
 	}
 
-	// 先对selector删除多余的空格
+	// 如果浏览器不支持querySelectorAll则使用自己的方法去处理
 	return select( selector.replace( rtrim, "$1" ), context, results, seed );
 }
 
