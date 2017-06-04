@@ -73,22 +73,26 @@ var i,
 	// Regular expressions
 
 	// http://www.w3.org/TR/css3-selectors/#whitespace
+	// 空白符
 	whitespace = "[\\x20\\t\\r\\n\\f]",
 
 	// http://www.w3.org/TR/CSS21/syndata.html#value-def-identifier
+	// 标识符（包括选择器中的元素名称，类和ID）只能包含字符[a-zA-Z0-9]和ISO 10646字符U 00A0及更高字符，加上连字符（ - ）和下划线（_）
 	identifier = "(?:\\\\.|[\\w-]|[^\0-\\xa0])+",
 
 	// Attribute selectors: http://www.w3.org/TR/selectors/#attribute-selectors
+	// 匹配属性 例如：[a="b"] [a=b] [a|='er']
 	attributes = "\\[" + whitespace + "*(" + identifier + ")(?:" + whitespace +
 		// Operator (capture 2)
 		"*([*^$|!~]?=)" + whitespace +
 		// "Attribute values must be CSS identifiers [capture 5] or strings [capture 3 or capture 4]"
 		"*(?:'((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\"|(" + identifier + "))|)" + whitespace +
 		"*\\]",
-
+	// 伪类选择器
 	pseudos = ":(" + identifier + ")(?:\\((" +
 		// To reduce the number of selectors needing tokenize in the preFilter, prefer arguments:
 		// 1. quoted (capture 3; capture 4 or capture 5)
+		// 为了减少preFilter中需要tokenize的选择器数量，最好使用参数：//引用（capture 3; capture 4或capture 5）
 		"('((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\")|" +
 		// 2. simple (capture 6)
 		"((?:\\\\.|[^\\\\()[\\]]|" + attributes + ")*)|" +
@@ -96,16 +100,19 @@ var i,
 		".*" +
 		")\\)|)",
 
-	// Leading and non-escaped trailing whitespace, capturing some non-whitespace characters preceding the latter
+	// 匹配至少一个空格
 	rwhitespace = new RegExp( whitespace + "+", "g" ),
+	// 这个用来去除selector多余的空格，免得干扰到后面空格的匹配关系
 	rtrim = new RegExp( "^" + whitespace + "+|((?:^|[^\\\\])(?:\\\\.)*)" + whitespace + "+$", "g" ),
-
+	// 匹配,前后空格
 	rcomma = new RegExp( "^" + whitespace + "*," + whitespace + "*" ),
+	// 匹配连接符
 	rcombinators = new RegExp( "^" + whitespace + "*([>+~]|" + whitespace + ")" + whitespace + "*" ),
-
+	// 属性选择器的等号后边部分，如：=aa]
 	rattributeQuotes = new RegExp( "=" + whitespace + "*([^\\]'\"]*?)" + whitespace + "*\\]", "g" ),
-
+	// 伪类选择器 如：:nth-child(3)
 	rpseudo = new RegExp( pseudos ),
+	// 匹配标识符
 	ridentifier = new RegExp( "^" + identifier + "$" ),
 
 	matchExpr = {
@@ -131,13 +138,15 @@ var i,
 
 	// 判断选择器是否为id、tag、class
 	rquickExpr = /^(?:#([\w-]+)|(\w+)|\.([\w-]+))$/,
-
+	// 匹配兄弟元素
 	rsibling = /[+~]/,
 
 	// CSS escapes
 	// http://www.w3.org/TR/CSS21/syndata.html#escaped-characters
+	// 匹配解码字符
 	runescape = new RegExp( "\\\\([\\da-f]{1,6}" + whitespace + "?|(" + whitespace + ")|.)", "ig" ),
 	funescape = function( _, escaped, escapedWhitespace ) {
+		// _代表整个匹配项，escaped代表第一个匹配项，escapedWhitespace代表第二个分组匹配项，即空白匹配项
 		var high = "0x" + escaped - 0x10000;
 		// NaN means non-codepoint
 		// Support: Firefox<24
@@ -151,22 +160,23 @@ var i,
 				String.fromCharCode( high >> 10 | 0xD800, high & 0x3FF | 0xDC00 );
 	},
 
-	// CSS string/identifier serialization
 	// https://drafts.csswg.org/cssom/#common-serializing-idioms
+	// 转义字符
 	rcssescape = /([\0-\x1f\x7f]|^-?\d)|^-$|[^\0-\x1f\x7f-\uFFFF\w-]/g,
 	fcssescape = function( ch, asCodePoint ) {
 		if ( asCodePoint ) {
 
-			// U+0000 NULL becomes U+FFFD REPLACEMENT CHARACTER
+			// U+0000 将空改成U+FFFD
 			if ( ch === "\0" ) {
 				return "\uFFFD";
 			}
 
 			// Control characters and (dependent upon position) numbers get escaped as code points
+			// 字符串 + \\ + 最后一个字符串转成16进制
 			return ch.slice( 0, -1 ) + "\\" + ch.charCodeAt( ch.length - 1 ).toString( 16 ) + " ";
 		}
 
-		// Other potentially-special ASCII characters get backslash-escaped
+		// 将其他特殊的ASCII字符进行转义
 		return "\\" + ch;
 	},
 
@@ -296,43 +306,44 @@ function Sizzle( selector, context, results, seed ) {
 				}
 			}
 
-			// 使用querySelectorAll方法
-			// 如果querySelectorAll方法存在并且之前没有缓存
+			// 如果querySelectorAll方法存在并且之前没有缓存，并且querySelectorAll不存在bug，或当前使用的选择器不存在bug
 			if ( support.qsa &&
 				!compilerCache[ selector + " " ] &&
 				(!rbuggyQSA || !rbuggyQSA.test( selector )) ) {
-
+				// 如果nodeType不为元素节点
 				if ( nodeType !== 1 ) {
 					newContext = context;
 					newSelector = selector;
 
-				// qSA looks outside Element context, which is not what we want
-				// Thanks to Andrew Dupont for this workaround technique
-				// Support: IE <=8
-				// Exclude object elements
+				// 排除对象元素
 				} else if ( context.nodeName.toLowerCase() !== "object" ) {
 
-					// Capture the context ID, setting it first if necessary
+					// 捕获上下文ID，如有必要，先设置它
 					if ( (nid = context.getAttribute( "id" )) ) {
+						// 对id进行转义
 						nid = nid.replace( rcssescape, fcssescape );
 					} else {
+						// 将上下文id设置为sizzle加new Date()
 						context.setAttribute( "id", (nid = expando) );
 					}
 
-					// Prefix every selector in the list
+					// 对选择器进行序列化并缓存
 					groups = tokenize( selector );
 					i = groups.length;
 					while ( i-- ) {
+						// 将选择器设置在上下文下面
 						groups[i] = "#" + nid + " " + toSelector( groups[i] );
 					}
+					// 将数组分割成字符串
 					newSelector = groups.join( "," );
 
-					// Expand context for sibling selectors
+					// 扩展兄弟选择器上下文
 					newContext = rsibling.test( selector ) && testContext( context.parentNode ) ||
 						context;
 				}
-
+				// 判断选择器是否存在
 				if ( newSelector ) {
+					// 尝试使用querySelectorAll获取元素
 					try {
 						push.apply( results,
 							newContext.querySelectorAll( newSelector )
@@ -340,6 +351,7 @@ function Sizzle( selector, context, results, seed ) {
 						return results;
 					} catch ( qsaError ) {
 					} finally {
+						// 如果上下文元素没有设置id则将前面默认设置的id删除
 						if ( nid === expando ) {
 							context.removeAttribute( "id" );
 						}
@@ -349,7 +361,7 @@ function Sizzle( selector, context, results, seed ) {
 		}
 	}
 
-	// All others
+	// 先对selector删除多余的空格
 	return select( selector.replace( rtrim, "$1" ), context, results, seed );
 }
 
@@ -368,6 +380,7 @@ function createCache() {
 			// 只保留最近的条目
 			delete cache[ keys.shift() ];
 		}
+		// 保存并返回当前已序列化的选择器数组
 		return (cache[ key + " " ] = value);
 	}
 	return cache;
@@ -551,6 +564,7 @@ function createPositionalPseudo( fn ) {
  * @param {Element|Object=} context
  * @returns {Element|Object|Boolean} The input node if acceptable, otherwise a falsy value
  */
+// 判断上下文是否存在，如果存在则返回本身，否则返回false
 function testContext( context ) {
 	return context && typeof context.getElementsByTagName !== "undefined" && context;
 }
@@ -1133,15 +1147,16 @@ Expr = Sizzle.selectors = {
 
 	preFilter: {
 		"ATTR": function( match ) {
+			// 匹配属性名并进行处理
 			match[1] = match[1].replace( runescape, funescape );
 
 			// Move the given value to match[3] whether quoted or unquoted
 			match[3] = ( match[3] || match[4] || match[5] || "" ).replace( runescape, funescape );
-
+			// 
 			if ( match[2] === "~=" ) {
 				match[3] = " " + match[3] + " ";
 			}
-
+			// 截取前4项
 			return match.slice( 0, 4 );
 		},
 
@@ -1156,20 +1171,23 @@ Expr = Sizzle.selectors = {
 				7 sign of y-component
 				8 y of y-component
 			*/
+			// 过滤:，将匹配的第一项转换成小写
 			match[1] = match[1].toLowerCase();
-
+			// 判断是否为nth
 			if ( match[1].slice( 0, 3 ) === "nth" ) {
-				// nth-* requires argument
+				// 如果nth为输入argument值则报错
 				if ( !match[3] ) {
 					Sizzle.error( match[0] );
 				}
 
 				// numeric x and y parameters for Expr.filter.CHILD
 				// remember that false/true cast respectively to 0/1
+				// 
 				match[4] = +( match[4] ? match[5] + (match[6] || 1) : 2 * ( match[3] === "even" || match[3] === "odd" ) );
+				// 
 				match[5] = +( ( match[7] + match[8] ) || match[3] === "odd" );
 
-			// other types prohibit arguments
+			// 其他类型不允许有参数
 			} else if ( match[3] ) {
 				Sizzle.error( match[0] );
 			}
@@ -1210,6 +1228,7 @@ Expr = Sizzle.selectors = {
 
 		"TAG": function( nodeNameSelector ) {
 			var nodeName = nodeNameSelector.replace( runescape, funescape ).toLowerCase();
+			// 如果为*肯定为标签选择器，否则判断元素的nodeName
 			return nodeNameSelector === "*" ?
 				function() { return true; } :
 				function( elem ) {
@@ -1630,57 +1649,68 @@ function setFilters() {}
 setFilters.prototype = Expr.filters = Expr.pseudos;
 Expr.setFilters = new setFilters();
 
+// 词法分析,将选择器序列化成一个数组
+// 函数返回一个token序列：{value:'匹配到的字符串', type:'对应的Token类型', matches:'正则匹配到的一个结构'}
 tokenize = Sizzle.tokenize = function( selector, parseOnly ) {
 	var matched, match, tokens, type,
 		soFar, groups, preFilters,
+		// 取缓存
 		cached = tokenCache[ selector + " " ];
-
+	// 这里的soFar是表示目前还未分析的字符串剩余部分
 	if ( cached ) {
 		return parseOnly ? 0 : cached.slice( 0 );
 	}
-
 	soFar = selector;
+	// 这是最后要返回的结果，一个二维数组
 	groups = [];
-	preFilters = Expr.preFilter;
-
+	// 对匹配到的Token适当做一些调整
+	preFilters = Expr.preFilter; //preFilters = Object {ATTR: function, CHILD: function, PSEUDO: function}
+	// 递归检测
 	while ( soFar ) {
 
-		// Comma and first run
+		// 判断是否有分组选择器，如果是第一次循环也会进入一次
 		if ( !matched || (match = rcomma.exec( soFar )) ) {
 			if ( match ) {
-				// Don't consume trailing commas as valid
+				// 跳到下一组选择器
 				soFar = soFar.slice( match[0].length ) || soFar;
 			}
+			// 添加一个分组
 			groups.push( (tokens = []) );
 		}
-
+		// 每次先让matched等于false，判断后面是否会重新赋值，如果没有则说明选择器有错
 		matched = false;
 
-		// Combinators
+		// 匹配连接符
 		if ( (match = rcombinators.exec( soFar )) ) {
+			// 删除连接符
 			matched = match.shift();
+			// 往规则组里边压入一个Token序列
 			tokens.push({
-				value: matched,
-				// Cast descendant combinators to space
-				type: match[0].replace( rtrim, " " )
+				value: matched, // 连接符
+				type: match[0].replace( rtrim, " " ) // 连接符类型
 			});
+			// 跳过已经匹配的连接符
 			soFar = soFar.slice( matched.length );
 		}
 
-		// Filters
+		// 提取正确的选择器
 		for ( type in Expr.filter ) {
+			// 匹配对应的选择器，对ATTR、CHILD、PSEUDO进行预处理
 			if ( (match = matchExpr[ type ].exec( soFar )) && (!preFilters[ type ] ||
 				(match = preFilters[ type ]( match ))) ) {
+				// 删除匹配项
 				matched = match.shift();
+				// 添加一个匹配项
 				tokens.push({
-					value: matched,
-					type: type,
-					matches: match
+					value: matched, // 匹配的选择器
+					type: type, // 选择器类型
+					matches: match // exec匹配的剩余项
 				});
+				// 跳过已经匹配的项
 				soFar = soFar.slice( matched.length );
 			}
 		}
-
+        // 既没有匹配到连接符也没有匹配到选择器则中断词法分析，因为选择器有错误
 		if ( !matched ) {
 			break;
 		}
@@ -1689,11 +1719,14 @@ tokenize = Sizzle.tokenize = function( selector, parseOnly ) {
 	// Return the length of the invalid excess
 	// if we're just parsing
 	// Otherwise, throw an error or return tokens
+	//放到tokenCache函数里进行缓存
+    //如果只需要这个接口检查选择器的合法性，直接就返回soFar的剩余长度，倘若是大于零，说明选择器不合法
+    //其余情况，如果soFar长度大于零，抛出异常；否则把groups记录在cache里边并返回
 	return parseOnly ?
 		soFar.length :
 		soFar ?
 			Sizzle.error( selector ) :
-			// Cache the tokens
+			// 缓存已序列化选择器
 			tokenCache( selector, groups ).slice( 0 );
 };
 
@@ -1702,6 +1735,7 @@ function toSelector( tokens ) {
 		len = tokens.length,
 		selector = "";
 	for ( ; i < len; i++ ) {
+		// 将所有选择器相加
 		selector += tokens[i].value;
 	}
 	return selector;
@@ -2119,12 +2153,12 @@ compile = Sizzle.compile = function( selector, match /* Internal Use Only */ ) {
 select = Sizzle.select = function( selector, context, results, seed ) {
 	var i, tokens, token, type, find,
 		compiled = typeof selector === "function" && selector,
+		// 如果seed等于false则对选择器进行序列化
 		match = !seed && tokenize( (selector = compiled.selector || selector) );
 
 	results = results || [];
 
-	// Try to minimize operations if there is only one selector in the list and no seed
-	// (the latter of which guarantees us context)
+	// 尝试最小化操作，如果列表中只有一个选择器，并且没有子元素
 	if ( match.length === 1 ) {
 
 		// Reduce context if the leading compound selector is an ID
@@ -2174,8 +2208,8 @@ select = Sizzle.select = function( selector, context, results, seed ) {
 		}
 	}
 
-	// Compile and execute a filtering function if one is not provided
-	// Provide `match` to avoid retokenization if we modified the selector above
+	// 编译并执行过滤函数（如果没有提供）
+	// 提供`match`以避免重新绘制，如果我们修改了上面的选择器
 	( compiled || compile( selector, match ) )(
 		seed,
 		context,
