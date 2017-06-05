@@ -228,15 +228,15 @@ try {
 // selector：css选择器, context：上下文，results：结果数组，seed：筛选集。
 function Sizzle( selector, context, results, seed ) {
 	var m, i, elem, nid, match, groups, newSelector,
-		// 如果有上下文并且上下文的ownerDocument属性不为false，也就是context不能是document
+		// 如果上下文是document返回null，否则返回document
 		newContext = context && context.ownerDocument,
 
-		// 如果转递了上下文则nodeType为传递上下文元素的nodeType，否则为根节点document
+		// 如果转递了上下文则nodeType为传递上下文元素类型，否则为类型为Document
 		nodeType = context ? context.nodeType : 9;
 
 	results = results || [];
 
-	// 无效选择器则直接返回
+	// 无效选择器或无效上下文则直接返回
 	if ( typeof selector !== "string" || !selector ||
 		nodeType !== 1 && nodeType !== 9 && nodeType !== 11 ) {
 
@@ -310,12 +310,12 @@ function Sizzle( selector, context, results, seed ) {
 			if ( support.qsa &&
 				!compilerCache[ selector + " " ] &&
 				(!rbuggyQSA || !rbuggyQSA.test( selector )) ) {
-				// 如果nodeType不为元素节点
+				// 如果没有传递上下文
 				if ( nodeType !== 1 ) {
 					newContext = context;
 					newSelector = selector;
 
-				// 排除对象元素
+				// 排除object元素
 				} else if ( context.nodeName.toLowerCase() !== "object" ) {
 
 					// 捕获上下文ID，如有必要，先设置它
@@ -337,7 +337,7 @@ function Sizzle( selector, context, results, seed ) {
 					// 将数组分割成字符串
 					newSelector = groups.join( "," );
 
-					// 扩展兄弟选择器上下文
+					// 如果是兄弟选择器则尝试将上下文设置成上下文的父节点
 					newContext = rsibling.test( selector ) && testContext( context.parentNode ) ||
 						context;
 				}
@@ -361,7 +361,7 @@ function Sizzle( selector, context, results, seed ) {
 		}
 	}
 
-	// 如果浏览器不支持querySelectorAll则使用自己的方法去处理
+	// 如果浏览器不支持querySelectorAll或需要使用更为复杂的操作则使用自己的方法去处理
 	return select( selector.replace( rtrim, "$1" ), context, results, seed );
 }
 
@@ -564,7 +564,7 @@ function createPositionalPseudo( fn ) {
  * @param {Element|Object=} context
  * @returns {Element|Object|Boolean} The input node if acceptable, otherwise a falsy value
  */
-// 判断上下文是否存在，如果存在则返回本身，否则返回false
+// 判断上下文是否正确
 function testContext( context ) {
 	return context && typeof context.getElementsByTagName !== "undefined" && context;
 }
@@ -632,7 +632,7 @@ setDocument = Sizzle.setDocument = function( node ) {
 	/* getElement(s)By*
 	---------------------------------------------------------------------- */
 
-	// Check if getElementsByTagName("*") returns only elements
+	// 检查getElementsByTagName（“*”）是否只返回元素
 	support.getElementsByTagName = assert(function( el ) {
 		el.appendChild( document.createComment("") );
 		return !el.getElementsByTagName("*").length;
@@ -641,23 +641,23 @@ setDocument = Sizzle.setDocument = function( node ) {
 	// 判断是否支持原生getElementsByClassName方法
 	support.getElementsByClassName = rnative.test( document.getElementsByClassName );
 
-	// Support: IE<10
-	// Check if getElementById returns elements by name
-	// The broken getElementById methods don't pick up programmatically-set names,
-	// so use a roundabout getElementsByName test
+	// 检查getElementById是否按名称返回元素
+	// IE < 10 中getElementsByName会动态获取id
 	support.getById = assert(function( el ) {
 		docElem.appendChild( el ).id = expando;
 		return !document.getElementsByName || !document.getElementsByName( expando ).length;
 	});
 
-	// ID filter and find
+	// getById返回false则说明ID选择器有问题
 	if ( support.getById ) {
+		// 过滤使用input name值找到的元素
 		Expr.filter["ID"] = function( id ) {
 			var attrId = id.replace( runescape, funescape );
 			return function( elem ) {
 				return elem.getAttribute("id") === attrId;
 			};
 		};
+		// 使用ID查找元素
 		Expr.find["ID"] = function( id, context ) {
 			if ( typeof context.getElementById !== "undefined" && documentIsHTML ) {
 				var elem = context.getElementById( id );
@@ -665,6 +665,7 @@ setDocument = Sizzle.setDocument = function( node ) {
 			}
 		};
 	} else {
+		// 过滤使用input name值找到的元素
 		Expr.filter["ID"] =  function( id ) {
 			var attrId = id.replace( runescape, funescape );
 			return function( elem ) {
@@ -674,22 +675,22 @@ setDocument = Sizzle.setDocument = function( node ) {
 			};
 		};
 
-		// Support: IE 6 - 7 only
-		// getElementById is not reliable as a find shortcut
+
 		Expr.find["ID"] = function( id, context ) {
 			if ( typeof context.getElementById !== "undefined" && documentIsHTML ) {
 				var node, i, elems,
 					elem = context.getElementById( id );
 
+				// 以下这些判断主要是防止IE获取错误的元素，在IE6-7中getElementById会获取input属性为name的元素
+				// 比如<input name="a"><div id="a"></div>获取到的是input元素而不是div
 				if ( elem ) {
 
-					// Verify the id attribute
 					node = elem.getAttributeNode("id");
 					if ( node && node.value === id ) {
 						return [ elem ];
 					}
 
-					// Fall back on getElementsByName
+					// 如果执行到这里说明input为name的元素被获取到了，所以我们需要使用getElementsByName去获取id为传递时相同的元素
 					elems = context.getElementsByName( id );
 					i = 0;
 					while ( (elem = elems[i++]) ) {
@@ -705,13 +706,13 @@ setDocument = Sizzle.setDocument = function( node ) {
 		};
 	}
 
-	// Tag
+	// 判断getElementsByTagName是否存在问题并获取元素
 	Expr.find["TAG"] = support.getElementsByTagName ?
 		function( tag, context ) {
 			if ( typeof context.getElementsByTagName !== "undefined" ) {
 				return context.getElementsByTagName( tag );
 
-			// DocumentFragment nodes don't have gEBTN
+			// DocumentFragment节点没有getElementsByTagName方法，尝试使用querySelectorAll方法
 			} else if ( support.qsa ) {
 				return context.querySelectorAll( tag );
 			}
@@ -721,10 +722,9 @@ setDocument = Sizzle.setDocument = function( node ) {
 			var elem,
 				tmp = [],
 				i = 0,
-				// By happy coincidence, a (broken) gEBTN appears on DocumentFragment nodes too
 				results = context.getElementsByTagName( tag );
 
-			// Filter out possible comments
+			// 过滤注释节点等，只获取元素节点
 			if ( tag === "*" ) {
 				while ( (elem = results[i++]) ) {
 					if ( elem.nodeType === 1 ) {
@@ -737,7 +737,7 @@ setDocument = Sizzle.setDocument = function( node ) {
 			return results;
 		};
 
-	// Class
+	// 判断getElementsByClassName是否存在并且不是xml则获取元素
 	Expr.find["CLASS"] = support.getElementsByClassName && function( className, context ) {
 		if ( typeof context.getElementsByClassName !== "undefined" && documentIsHTML ) {
 			return context.getElementsByClassName( className );
@@ -1137,14 +1137,14 @@ Expr = Sizzle.selectors = {
 	attrHandle: {},
 
 	find: {},
-
+	// 节点相关关系，如果两个元素是紧密连接的则定义first属性，在创建位置匹配器时根据first属性来匹配合适的节点
 	relative: {
 		">": { dir: "parentNode", first: true },
 		" ": { dir: "parentNode" },
 		"+": { dir: "previousSibling", first: true },
 		"~": { dir: "previousSibling" }
 	},
-
+	// 预过滤
 	preFilter: {
 		"ATTR": function( match ) {
 			// 匹配属性名并进行处理
@@ -1223,7 +1223,7 @@ Expr = Sizzle.selectors = {
 			return match.slice( 0, 3 );
 		}
 	},
-
+	// 过滤
 	filter: {
 
 		"TAG": function( nodeNameSelector ) {
@@ -1654,9 +1654,8 @@ Expr.setFilters = new setFilters();
 tokenize = Sizzle.tokenize = function( selector, parseOnly ) {
 	var matched, match, tokens, type,
 		soFar, groups, preFilters,
-		// 取缓存
+		// 此选择器如果之前已经序列过则直接使用之前的
 		cached = tokenCache[ selector + " " ];
-	// 这里的soFar是表示目前还未分析的字符串剩余部分
 	if ( cached ) {
 		return parseOnly ? 0 : cached.slice( 0 );
 	}
@@ -1729,18 +1728,17 @@ tokenize = Sizzle.tokenize = function( selector, parseOnly ) {
 			// 缓存已序列化选择器
 			tokenCache( selector, groups ).slice( 0 );
 };
-
+// 将tokens转换成选择器
 function toSelector( tokens ) {
 	var i = 0,
 		len = tokens.length,
 		selector = "";
 	for ( ; i < len; i++ ) {
-		// 将所有选择器相加
 		selector += tokens[i].value;
 	}
 	return selector;
 }
-
+// 生成一个位置查找关系
 function addCombinator( matcher, combinator, base ) {
 	var dir = combinator.dir,
 		skip = combinator.next,
@@ -1749,7 +1747,7 @@ function addCombinator( matcher, combinator, base ) {
 		doneName = done++;
 
 	return combinator.first ?
-		// Check against closest ancestor/preceding element
+		// 确定是否是紧跟在后面的子代元素或者兄弟元素
 		function( elem, context, xml ) {
 			while ( (elem = elem[ dir ]) ) {
 				if ( elem.nodeType === 1 || checkNonElements ) {
@@ -1759,12 +1757,12 @@ function addCombinator( matcher, combinator, base ) {
 			return false;
 		} :
 
-		// Check against all ancestor/preceding elements
+		// 对于不是紧跟的节点
 		function( elem, context, xml ) {
 			var oldCache, uniqueCache, outerCache,
 				newCache = [ dirruns, doneName ];
 
-			// We can't set arbitrary data on XML nodes, so they don't benefit from combinator caching
+			// 不能再xml节点上设置额外信息，所以不能使用cache
 			if ( xml ) {
 				while ( (elem = elem[ dir ]) ) {
 					if ( elem.nodeType === 1 || checkNonElements ) {
@@ -1787,13 +1785,13 @@ function addCombinator( matcher, combinator, base ) {
 						} else if ( (oldCache = uniqueCache[ key ]) &&
 							oldCache[ 0 ] === dirruns && oldCache[ 1 ] === doneName ) {
 
-							// Assign to newCache so results back-propagate to previous elements
+							// 有缓存且符合关系的话就直接返回不需调用matcher了
 							return (newCache[ 2 ] = oldCache[ 2 ]);
 						} else {
 							// Reuse newcache so results back-propagate to previous elements
 							uniqueCache[ key ] = newCache;
 
-							// A match means we're done; a fail means we have to keep checking
+							// 有match时就说明成功了，就可以直接返回，否则要继续循环
 							if ( (newCache[ 2 ] = matcher( elem, context, xml )) ) {
 								return true;
 							}
@@ -2115,11 +2113,13 @@ compile = Sizzle.compile = function( selector, match /* Internal Use Only */ ) {
 	var i,
 		setMatchers = [],
 		elementMatchers = [],
+		// 尝试取之前已经编译后的结果
 		cached = compilerCache[ selector + " " ];
-
+	// 如果没有缓存
 	if ( !cached ) {
 		// Generate a function of recursive functions that can be used to check each element
 		if ( !match ) {
+			// 序列化选择器
 			match = tokenize( selector );
 		}
 		i = match.length;
@@ -2283,9 +2283,9 @@ if ( !assert(function( el ) {
 	});
 }
 
-// EXPOSE
+// 缓存Sizzle
 var _sizzle = window.Sizzle;
-
+// 使用noConflict解决命名冲突，返回Sizzle我们可以自己定义一个名字，如果不存在命名冲突Sizzle会将Sizzle设置成之前缓存的Sizzle
 Sizzle.noConflict = function() {
 	if ( window.Sizzle === Sizzle ) {
 		window.Sizzle = _sizzle;
@@ -2293,15 +2293,15 @@ Sizzle.noConflict = function() {
 
 	return Sizzle;
 };
-
+	// 使用amd规范导出Sizzle
 if ( typeof define === "function" && define.amd ) {
 	define(function() { return Sizzle; });
-// Sizzle requires that there be a global window in Common-JS like environments
+	// 使用Common-js规范导出Sizzle
 } else if ( typeof module !== "undefined" && module.exports ) {
 	module.exports = Sizzle;
 } else {
+	// 导出到全局
 	window.Sizzle = Sizzle;
 }
-// EXPOSE
 
 })( window );
