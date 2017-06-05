@@ -1138,6 +1138,7 @@ Expr = Sizzle.selectors = {
 
 	find: {},
 	// 节点相关关系，如果两个元素是紧密连接的则定义first属性，在创建位置匹配器时根据first属性来匹配合适的节点
+	// dir对层级关系的处理，查找父节点或兄弟节点。first查找一层即可
 	relative: {
 		">": { dir: "parentNode", first: true },
 		" ": { dir: "parentNode" },
@@ -1666,7 +1667,7 @@ tokenize = Sizzle.tokenize = function( selector, parseOnly ) {
 	preFilters = Expr.preFilter; //preFilters = Object {ATTR: function, CHILD: function, PSEUDO: function}
 	// 递归检测
 	while ( soFar ) {
-
+		// 分组
 		// 判断是否有分组选择器，如果是第一次循环也会进入一次
 		if ( !matched || (match = rcomma.exec( soFar )) ) {
 			if ( match ) {
@@ -1679,6 +1680,7 @@ tokenize = Sizzle.tokenize = function( selector, parseOnly ) {
 		// 每次先让matched等于false，判断后面是否会重新赋值，如果没有则说明选择器有错
 		matched = false;
 
+		// 层级关系
 		// 匹配连接符
 		if ( (match = rcombinators.exec( soFar )) ) {
 			// 删除连接符
@@ -1692,6 +1694,7 @@ tokenize = Sizzle.tokenize = function( selector, parseOnly ) {
 			soFar = soFar.slice( matched.length );
 		}
 
+		// 选择器
 		// 提取正确的选择器
 		for ( type in Expr.filter ) {
 			// 匹配对应的选择器，对ATTR、CHILD、PSEUDO进行预处理
