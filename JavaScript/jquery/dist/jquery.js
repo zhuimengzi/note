@@ -190,7 +190,7 @@ jQuery.fn = jQuery.prototype = {
 	sort: arr.sort,
 	splice: arr.splice
 };
-// 对象扩展，如果只传递一个参数则在jQuery对象上添加方法
+// 对象扩展，如果只传递一个参数则在当前对象上添加方法（jQuery.extend在jQuery上添加方法，jQuery.fn.extend在jQuery原型上添加方法）
 jQuery.extend = jQuery.fn.extend = function() {
 	var options, name, src, copy, copyIsArray, clone,
 		target = arguments[ 0 ] || {},
