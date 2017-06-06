@@ -93,7 +93,7 @@ var
 	// JQuery入口
 	jQuery = function( selector, context ) {
 
-		// 初始化构造函数
+		// 初始化原型中的init方法
 		return new jQuery.fn.init( selector, context );
 	},
 
@@ -190,12 +190,13 @@ jQuery.fn = jQuery.prototype = {
 	sort: arr.sort,
 	splice: arr.splice
 };
-
+// 对象扩展，如果只传递一个参数则在jQuery对象上添加方法
 jQuery.extend = jQuery.fn.extend = function() {
 	var options, name, src, copy, copyIsArray, clone,
 		target = arguments[ 0 ] || {},
 		i = 1,
 		length = arguments.length,
+		// 是否开启深复制
 		deep = false;
 	// 以下是对传递参数的判断，确定参数关系
 
@@ -234,19 +235,22 @@ jQuery.extend = jQuery.fn.extend = function() {
 					continue;
 				}
 
-				// 如果开启深度复制则对数组和对象进行深复制
+				// 如果开启深度复制则对数组和对象(纯粹对象)进行深复制
 				if ( deep && copy && ( jQuery.isPlainObject( copy ) ||
 					( copyIsArray = Array.isArray( copy ) ) ) ) {
-
+					// 判断是对象还是数组
 					if ( copyIsArray ) {
+						// 重置copyIsArray
 						copyIsArray = false;
+						// 如果目标数组属性src是一个数组则使用src作为目标数组
 						clone = src && Array.isArray( src ) ? src : [];
 
 					} else {
+						// 如果目标对象属性src是一个对象则使用src作为目标对象
 						clone = src && jQuery.isPlainObject( src ) ? src : {};
 					}
 
-					// Never move original objects, clone them
+					// 递归复制
 					target[ name ] = jQuery.extend( deep, clone, copy );
 
 				// 对简单值类型或未开启深度复制并且值不为空则走这里
@@ -263,7 +267,7 @@ jQuery.extend = jQuery.fn.extend = function() {
 
 jQuery.extend( {
 
-	// Unique for each copy of jQuery on the page
+	// 页面上每个jQuery副本都是唯一的，\D：去除非数字
 	expando: "jQuery" + ( version + Math.random() ).replace( /\D/g, "" ),
 
 	// Assume jQuery is ready without the ready module
