@@ -9,5 +9,36 @@
         <p></p>
     </div>
     <script src="dist/sizzle.js"></script>
+    <ul id="box">
+        <li>
+            <h2>水果</h2>
+            <ul>
+                <li>苹果</li>
+                <li>桔子</li>
+                <li>葡萄</li>
+            </ul>
+        </li>
+    </ul>
+    <input type="submit" id="sub">
+    <script>
+        var box = document.getElementById("box");
+        box.addEventListener("click",function(event){
+            var target = event.target,
+                ul = null;
+            while(target.nodeName.toLowerCase() !== "li" && target !== box){
+                target = target.parentNode;
+            }
+            if(target.nodeName.toLowerCase() === "li"){
+                ul = target.getElementsByTagName('ul')[0];
+                if(!ul.isShow){
+                    ul.style.display = "none";
+                    ul.isShow = true;
+                }else{
+                    ul.style.display = "block";
+                    ul.isShow = false;
+                }
+            }
+        });
+    </script>
 </body>
 </html>

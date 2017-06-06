@@ -1805,18 +1805,22 @@ function addCombinator( matcher, combinator, base ) {
 			return false;
 		};
 }
-
+// 生成一个终极匹配器
 function elementMatcher( matchers ) {
+	// 如果是多个匹配器的情况，那么就需要elem符合全部匹配器规则
 	return matchers.length > 1 ?
 		function( elem, context, xml ) {
 			var i = matchers.length;
+			// 从右到左开始匹配
 			while ( i-- ) {
+				// 如果有一个没匹配中，那就说明该节点elem不符合规则
 				if ( !matchers[i]( elem, context, xml ) ) {
 					return false;
 				}
 			}
 			return true;
 		} :
+		// 单个匹配器的话就返回自己即可
 		matchers[0];
 }
 
