@@ -14,7 +14,7 @@
 ( function( global, factory ) {
 
 	"use strict";
-
+	// 判断是否有使用CommonJS
 	if ( typeof module === "object" && typeof module.exports === "object" ) {
 
 		// For CommonJS and CommonJS-like environments where a proper `window`
@@ -24,9 +24,12 @@
 		// This accentuates the need for the creation of a real `window`.
 		// e.g. var jQuery = require("jquery")(window);
 		// See ticket #14549 for more info.
+		// 导出jQuery
 		module.exports = global.document ?
+			// true 不在window上暴露$和jQuery
 			factory( global, true ) :
 			function( w ) {
+				// 如果不在浏览器中使用将会报错
 				if ( !w.document ) {
 					throw new Error( "jQuery requires a window with a document" );
 				}
@@ -93,7 +96,7 @@ var
 	// JQuery入口
 	jQuery = function( selector, context ) {
 
-		// 构造原型中的init方法
+		// jQuery为了避免无限递归自己将init作为构造器
 		return new jQuery.fn.init( selector, context );
 	},
 
@@ -2907,6 +2910,7 @@ jQuery.filter = function( expr, elems, not ) {
 };
 
 jQuery.fn.extend( {
+	// 查找元素
 	find: function( selector ) {
 		var i, ret,
 			len = this.length,
@@ -2921,10 +2925,11 @@ jQuery.fn.extend( {
 				}
 			} ) );
 		}
-
+		// 返回一个新的jQuery对象
 		ret = this.pushStack( [] );
 
 		for ( i = 0; i < len; i++ ) {
+			// 调用Sizzle引擎查找元素
 			jQuery.find( selector, self[ i ], ret );
 		}
 
@@ -3034,7 +3039,7 @@ var rootjQuery,
 					return this;
 				}
 
-			// HANDLE: $(expr, $(...))
+			// 判断是否是选择器
 			} else if ( !context || context.jquery ) {
 				return ( context || root ).find( selector );
 
@@ -10227,34 +10232,30 @@ if ( typeof define === "function" && define.amd ) {
 
 
 var
-
-	// Map over jQuery in case of overwrite
+	// 将全局jQuery保存起来
 	_jQuery = window.jQuery,
-
-	// Map over the $ in case of overwrite
+	// 将全局$保存起来
 	_$ = window.$;
-
+	// 解决命名冲突 当传递一个true值则会将$和jQuery命名权限都交出
 jQuery.noConflict = function( deep ) {
+	// 如果现在使用的是jQuery则将$权限交出，给其他插件使用
 	if ( window.$ === jQuery ) {
 		window.$ = _$;
 	}
-
+	// 如果deep为true并且使用的是jQuery则将jQuery命名权限交出，给其他插件使用
 	if ( deep && window.jQuery === jQuery ) {
 		window.jQuery = _jQuery;
 	}
-
+	// 返回jQuery，我们可以去重新命名
 	return jQuery;
 };
 
-// Expose jQuery and $ identifiers, even in AMD
-// (#7102#comment:10, https://github.com/jquery/jquery/pull/557)
-// and CommonJS for browser emulators (#13566)
+// 暴露jQuery和$标识符，即使在AMD中
+// 在CommonJS中使用局部的jQuery
+// 关于在全局暴露jQuery的相关讨论：https://github.com/jquery/jquery/pull/557
 if ( !noGlobal ) {
 	window.jQuery = window.$ = jQuery;
 }
-
-
-
 
 return jQuery;
 } );
