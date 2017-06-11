@@ -11,6 +11,18 @@
  *
  * Date: 2017-03-20T18:59Z
  */
+
+/*
+笔记
+
+1、直接在jquery的prototype上添加属性与使用jquery的extend方法添加属性有什么区别
+从本质上来讲它们都是为jquery的原型添加属性，但是如果直接在原型上添加属性那样不太方便，而且如果用户直接将给jquery.prototype设置成一个对象，那么就会把jquery中写的给覆盖，另一方面就是统一规范，同时达到隐藏细节的作用，毕竟使用插件的很大一部分来自新手。
+
+2、回调和异步的区别
+异步是指当前任务没有执行完毕之前，你可以先去做其他的事，等当前的事做完再去执行相应的方法
+回调是指把一个函数作为参数来传递，当符合某个条件的时候此函数就会被执行
+ */
+
 ( function( global, factory ) {
 
 	"use strict";
@@ -152,7 +164,7 @@ jQuery.fn = jQuery.prototype = {
 		return ret;
 	},
 
-	// 对返回的元素集合进行遍历
+	// 对元素集合进行遍历
 	each: function( callback ) {
 		return jQuery.each( this, callback );
 	},
@@ -281,12 +293,13 @@ jQuery.extend( {
 	},
 
 	noop: function() {},
-
+	// 判断是不是一个函数
 	isFunction: function( obj ) {
 		return jQuery.type( obj ) === "function";
 	},
-
+	// 判断是不是window
 	isWindow: function( obj ) {
+		// 防止报错所以先判断一下obj是不是null或undefined
 		return obj != null && obj === obj.window;
 	},
 
@@ -336,13 +349,14 @@ jQuery.extend( {
 		}
 		return true;
 	},
-
+	// 判断类型
 	type: function( obj ) {
+		// 如果obj为null或undefined，则将其转换成字符串返回
 		if ( obj == null ) {
 			return obj + "";
 		}
 
-		// Support: Android <=2.3 only (functionish RegExp)
+		// 如果obj的类型是object或function则借用Object的toString方法去获取它的类型，如果obj的类型不在class2type中则当作object类型，否则使用typeof来判断就行了
 		return typeof obj === "object" || typeof obj === "function" ?
 			class2type[ toString.call( obj ) ] || "object" :
 			typeof obj;
@@ -359,18 +373,20 @@ jQuery.extend( {
 	camelCase: function( string ) {
 		return string.replace( rmsPrefix, "ms-" ).replace( rdashAlpha, fcamelCase );
 	},
-
+	// 迭代器
 	each: function( obj, callback ) {
 		var length, i = 0;
-
+		// 判断是不是数组或类数组
 		if ( isArrayLike( obj ) ) {
 			length = obj.length;
 			for ( ; i < length; i++ ) {
+				// 使用call可以使得在回调中this指向obj[i]，如果回调返回false则跳出循环
 				if ( callback.call( obj[ i ], i, obj[ i ] ) === false ) {
 					break;
 				}
 			}
 		} else {
+			// 遍历对象
 			for ( i in obj ) {
 				if ( callback.call( obj[ i ], i, obj[ i ] ) === false ) {
 					break;
@@ -521,25 +537,22 @@ if ( typeof Symbol === "function" ) {
 	jQuery.fn[ Symbol.iterator ] = arr[ Symbol.iterator ];
 }
 
-// Populate the class2type map
+// 为class2type赋值所有js数据类型
 jQuery.each( "Boolean Number String Function Array Date RegExp Object Error Symbol".split( " " ),
 function( i, name ) {
 	class2type[ "[object " + name + "]" ] = name.toLowerCase();
 } );
-
+// 判断是否具有数组特性
 function isArrayLike( obj ) {
-
-	// Support: real iOS 8.2 only (not reproducible in simulator)
-	// `in` check used to prevent JIT error (gh-2145)
-	// hasOwn isn't used here due to false negatives
-	// regarding Nodelist length in IE
+	// 如果obj为真并且具有length属性则返回length长度否则false
 	var length = !!obj && "length" in obj && obj.length,
 		type = jQuery.type( obj );
-
+	// 如果obj是一个函数或window对象时返回false 因为函数和window都有length属性，提前判断好直接跳出
+	// 某些低版本浏览器 typeof 正则的时候会返回function
 	if ( type === "function" || jQuery.isWindow( obj ) ) {
 		return false;
 	}
-
+	// 如果obj是一个数组或obj具有length属性并且长度为0（当作类数组），或长度大于0但最后一项存在obj中
 	return type === "array" || length === 0 ||
 		typeof length === "number" && length > 0 && ( length - 1 ) in obj;
 }
@@ -3252,9 +3265,10 @@ var rnothtmlwhite = ( /[^\x20\t\r\n\f]+/g );
 
 
 
-// Convert String-formatted options into Object-formatted ones
+// 将字符串格式的选项转换为对象格式的选项
 function createOptions( options ) {
 	var object = {};
+	// 将options转换成数组并进行遍历添加到object中
 	jQuery.each( options.match( rnothtmlwhite ) || [], function( _, flag ) {
 		object[ flag ] = true;
 	} );
@@ -3262,143 +3276,128 @@ function createOptions( options ) {
 }
 
 /*
- * Create a callback list using the following parameters:
- *
- *	options: an optional list of space-separated options that will change how
- *			the callback list behaves or a more traditional option object
- *
- * By default a callback list will act like an event callback list and can be
- * "fired" multiple times.
- *
- * Possible options:
- *
- *	once:			will ensure the callback list can only be fired once (like a Deferred)
- *
- *	memory:			will keep track of previous values and will call any callback added
- *					after the list has been fired right away with the latest "memorized"
- *					values (like a Deferred)
- *
- *	unique:			will ensure a callback can only be added once (no duplicate in the list)
- *
- *	stopOnFalse:	interrupt callings when a callback returns false
- *
- */
+一个多用途的回调列表对象，提供了强大的的方式来管理回调函数列表。
+可用的 flags:
+once: 确保这个回调列表只执行一次(像一个递延 Deferred).
+memory: 保持以前的值和将添加到这个列表的后面的最新的值立即执行调用任何回调 (像一个递延 Deferred).
+unique: 确保一次只能添加一个回调(所以有没有在列表中的重复).
+stopOnFalse: 当一个回调返回false 时中断调用
+*/
+// 如果传递memory参数fire执行后，以后每次add时，都会先执行一次
 jQuery.Callbacks = function( options ) {
 
-	// Convert options from String-formatted to Object-formatted if needed
-	// (we check in cache first)
+	// 如果传递的是一个字符串则将字符串转成对象，否则返回一个空对象，或将传递时的对象拷贝到空对象上
 	options = typeof options === "string" ?
 		createOptions( options ) :
 		jQuery.extend( {}, options );
 
-	var // Flag to know if list is currently firing
+	var // 标记函数队列是否正在触发
 		firing,
 
-		// Last fire value for non-forgettable lists
+		// 前一次执行时，保留下的上下文环境和参数列表
 		memory,
 
-		// Flag to know if list was already fired
+		// 标记函数队列是否被触发过
 		fired,
 
-		// Flag to prevent firing
+		// 标记函数队列是否被锁定
 		locked,
 
-		// Actual callback list
+		// 函数队列
 		list = [],
 
-		// Queue of execution data for repeatable lists
+		// 函数队列执行时的上下文环境和参数列表
 		queue = [],
 
-		// Index of currently firing callback (modified by add/remove as needed)
+		// 标记当前正在执行第几项
 		firingIndex = -1,
 
-		// Fire callbacks
+		// 执行函数队列
 		fire = function() {
-
-			// Enforce single-firing
+			// 判断是否要锁定函数队列
 			locked = locked || options.once;
-
-			// Execute callbacks for all pending executions,
-			// respecting firingIndex overrides and runtime changes
+			// 标记函数队列已被触发，并正在执行
 			fired = firing = true;
 			for ( ; queue.length; firingIndex = -1 ) {
 				memory = queue.shift();
 				while ( ++firingIndex < list.length ) {
-
-					// Run callback and check for early termination
+					// 当设置stopOnFalse并且函数执行返回false时终止后面的循环
 					if ( list[ firingIndex ].apply( memory[ 0 ], memory[ 1 ] ) === false &&
 						options.stopOnFalse ) {
 
-						// Jump to end and forget the data so .add doesn't re-fire
+						// 把firingIndex设置成list的长度，使其达到不再循环的效果
 						firingIndex = list.length;
+						// 清空保留下来的上下文环境和参数列表
 						memory = false;
 					}
 				}
 			}
 
-			// Forget the data if we're done with it
+			// 如果未规定保存上下文环境和参数列表，则清空。
 			if ( !options.memory ) {
 				memory = false;
 			}
-
+			// 将正在执行置成false
 			firing = false;
 
-			// Clean up if we're done firing for good
+			// 判断函数队列是否被锁定，只执行一次的函数，关闭fire方法
 			if ( locked ) {
 
-				// Keep an empty list if we have data for future add calls
+				// 若是规定保存上下文环境和参数列表，则清空函数队列
+				// 在add方法中，memory 是能直接调用fire的，也就是说能立即执行
 				if ( memory ) {
 					list = [];
 
-				// Otherwise, this object is spent
+				// 清空数组
 				} else {
 					list = "";
 				}
 			}
 		},
 
-		// Actual Callbacks object
+		// 被返回的对象
 		self = {
 
-			// Add a callback or a collection of callbacks to the list
+			// 添加回调
 			add: function() {
 				if ( list ) {
-
-					// If we have memory from a past run, we should fire after adding
+					// 如果有上次保留的上下文和参数，且当前不在执行队列，则向当前正在执行的队列添加上次保存的上下文和参数
 					if ( memory && !firing ) {
 						firingIndex = list.length - 1;
 						queue.push( memory );
 					}
-
 					( function add( args ) {
 						jQuery.each( args, function( _, arg ) {
+							// 判断当前项是不是一个函数
 							if ( jQuery.isFunction( arg ) ) {
+								// 如果设置了不允许传递相同的方法，则判断当前项是不是已经在回调队列里面了
 								if ( !options.unique || !self.has( arg ) ) {
 									list.push( arg );
 								}
 							} else if ( arg && arg.length && jQuery.type( arg ) !== "string" ) {
-
-								// Inspect recursively
+								// 如果是一个对象则递归检测
 								add( arg );
 							}
 						} );
 					} )( arguments );
-
+					// 传递值为memory，并且当前不在执行，则执行一次函数队列
 					if ( memory && !firing ) {
 						fire();
 					}
 				}
+				// 返回当前对象
 				return this;
 			},
 
-			// Remove a callback from the list
+			// 删除回调
 			remove: function() {
 				jQuery.each( arguments, function( _, arg ) {
 					var index;
+					// 循环查找要删除的项并把它删除
 					while ( ( index = jQuery.inArray( arg, list, index ) ) > -1 ) {
 						list.splice( index, 1 );
 
-						// Handle firing indexes
+						// 纠正正在执行的函数的位置信息
 						if ( index <= firingIndex ) {
 							firingIndex--;
 						}
@@ -3407,15 +3406,15 @@ jQuery.Callbacks = function( options ) {
 				return this;
 			},
 
-			// Check if a given callback is in the list.
-			// If no argument is given, return whether or not list has callbacks attached.
+			// 检查列表中是否有给定的回调。
+			// 如果没有给出参数，则返回是否附加了回调。
 			has: function( fn ) {
 				return fn ?
 					jQuery.inArray( fn, list ) > -1 :
 					list.length > 0;
 			},
 
-			// Remove all callbacks from the list
+			// 删除所有函数队列
 			empty: function() {
 				if ( list ) {
 					list = [];
@@ -3423,52 +3422,50 @@ jQuery.Callbacks = function( options ) {
 				return this;
 			},
 
-			// Disable .fire and .add
-			// Abort any current/pending executions
-			// Clear all callbacks and values
+			// 禁用函数队列
 			disable: function() {
 				locked = queue = [];
 				list = memory = "";
 				return this;
 			},
+			// 判断函数队列是否已被禁用
 			disabled: function() {
 				return !list;
 			},
-
-			// Disable .fire
-			// Also disable .add unless we have memory (since it would have no effect)
-			// Abort any pending executions
+			// 锁定函数队列
 			lock: function() {
 				locked = queue = [];
+				// 如果是memory或是函数队列正在执行时，不清空函数和上下文环境和参数列表
 				if ( !memory && !firing ) {
 					list = memory = "";
 				}
 				return this;
 			},
+			// 判断函数队列是否已被锁定
 			locked: function() {
 				return !!locked;
 			},
-
-			// Call all callbacks with the given context and arguments
+			// 使用给定的上下文和参数调用所有回调
 			fireWith: function( context, args ) {
 				if ( !locked ) {
 					args = args || [];
+					// 如果args是一个数组则使用slice返回一个数组，否则直接返回
 					args = [ context, args.slice ? args.slice() : args ];
+					// 把当前数组添加到可重复执行队列
 					queue.push( args );
 					if ( !firing ) {
+						// 执行回调队列
 						fire();
 					}
 				}
 				return this;
 			},
-
-			// Call all the callbacks with the given arguments
+			// 使用给定的参数调用所有回调
 			fire: function() {
 				self.fireWith( this, arguments );
 				return this;
 			},
-
-			// To know if the callbacks have already been called at least once
+			// 判断函数队列是否已经被执行过
 			fired: function() {
 				return !!fired;
 			}
