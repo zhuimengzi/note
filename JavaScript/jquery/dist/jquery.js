@@ -116,11 +116,16 @@ var
 	// Make sure we trim BOM and NBSP
 	rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g,
 
-	// Matches dashed string for camelizing
-	rmsPrefix = /^-ms-/,
+	// 正则 rmsPrefix 用于匹配字符串中前缀“-ms-” ，匹配部分会被替换为“ms-” 。
+  // 这么做是因为在 IE 中，连字符式的样式名前缀“-ms-”对应小写的“ms” ，而不是驼峰式的“ Ms” 。
+  // 例如， “ -ms-transform”对应“ msTransform”而不是“ MsTransform” 。
+  // 在 IE 以外的浏览器中，连字符式的样式名则可以正确地转换为驼峰式，例如， “ -moz-transform”对应“MozTransform”。
+  rmsPrefix = /^-ms-/,
+  // 正则 rdashAlpha 用于匹配字符串中连字符“ -”和其后的第一个字母或数字。
+  // 如果连字符“ -”后是字母，则匹配部分会被替换为对应的大写字母；如果连字符“ -”后是数字，则会删掉连字符“-” ，保留数字
 	rdashAlpha = /-([a-z])/g,
 
-	// Used by jQuery.camelCase as callback to replace()
+	// 负责把连字符后的字母转换为大写
 	fcamelCase = function( all, letter ) {
 		return letter.toUpperCase();
 	};
@@ -337,13 +342,10 @@ jQuery.extend( {
 		// fnToString：将函数转换成字符串 ObjectFunctionString：function Object() { [native code] }
 		return typeof Ctor === "function" && fnToString.call( Ctor ) === ObjectFunctionString;
 	},
-
+  // 判断是不是一个空的对象
 	isEmptyObject: function( obj ) {
-
-		/* eslint-disable no-unused-vars */
-		// See https://github.com/eslint/eslint/issues/6125
 		var name;
-
+    // 只要有一项满足条件就说明不是空对象
 		for ( name in obj ) {
 			return false;
 		}
@@ -367,9 +369,7 @@ jQuery.extend( {
 		DOMEval( code );
 	},
 
-	// Convert dashed to camelCase; used by the css and data modules
-	// Support: IE <=9 - 11, Edge 12 - 13
-	// Microsoft forgot to hump their vendor prefix (#9572)
+	// 将css前缀转换成驼峰命名，对于ie浏览器前缀不会被转换成大写
 	camelCase: function( string ) {
 		return string.replace( rmsPrefix, "ms-" ).replace( rdashAlpha, fcamelCase );
 	},
@@ -3291,10 +3291,10 @@ jQuery.Callbacks = function( options ) {
 		createOptions( options ) :
 		jQuery.extend( {}, options );
 
-	var // 标记函数队列是否正在触发
+	var // 标记函数队列是否正在执行
 		firing,
 
-		// 前一次执行时，保留下的上下文环境和参数列表
+		// 上一次执行时保留下的上下文环境和参数列表
 		memory,
 
 		// 标记函数队列是否被触发过
@@ -3961,36 +3961,44 @@ if ( document.readyState === "complete" ||
 
 
 
-// Multifunctional method to get and set values of a collection
-// The value/s can optionally be executed if it's a function
+/*
+---------------存取---------------------
+ elems    ：节点集合
+ fn       ：对节点进行操作的函数
+ key      ：属性名
+ value    ：值
+ chainable：是否需要链式调用
+ emptyGet ：节点集合中没有元素时返回的默认值
+ raw      ：声明value是不是一个函数
+*/
 var access = function( elems, fn, key, value, chainable, emptyGet, raw ) {
 	var i = 0,
 		len = elems.length,
+    // 如果key为null或undefined则bulk等于true，bulk为true时为所有元素调用fn
 		bulk = key == null;
 
-	// Sets many values
+	// 如果key是一个object对象则进行递归
 	if ( jQuery.type( key ) === "object" ) {
 		chainable = true;
 		for ( i in key ) {
 			access( elems, fn, i, key[ i ], true, emptyGet, raw );
 		}
 
-	// Sets one value
+	// 如果值不为空
 	} else if ( value !== undefined ) {
 		chainable = true;
-
+    // 如果value不是一个函数
 		if ( !jQuery.isFunction( value ) ) {
 			raw = true;
 		}
-
 		if ( bulk ) {
-
-			// Bulk operations run against the entire set
+      // 批量操作针对整个集合来运行
 			if ( raw ) {
+        // 进行set操作
 				fn.call( elems, value );
 				fn = null;
 
-			// ...except when executing function values
+			// 除非value是一个函数
 			} else {
 				bulk = fn;
 				fn = function( elem, key, value ) {
@@ -3998,9 +4006,11 @@ var access = function( elems, fn, key, value, chainable, emptyGet, raw ) {
 				};
 			}
 		}
-
+    // 如果fn存在，掉调用每一个元素，无论key是否有值，都会走到这个判断，执行set动作
 		if ( fn ) {
+      // 对elems的每一项进行调用fn
 			for ( ; i < len; i++ ) {
+        // 如果value是原始数据，就取value，如果是个函数，就调用这个函数取值
 				fn(
 					elems[ i ], key, raw ?
 					value :
@@ -4009,63 +4019,50 @@ var access = function( elems, fn, key, value, chainable, emptyGet, raw ) {
 			}
 		}
 	}
-
+  // 如果是链式调用则返回元素集合
 	if ( chainable ) {
 		return elems;
 	}
 
-	// Gets
+	// 在所有元素上调用fn
 	if ( bulk ) {
 		return fn.call( elems );
 	}
-
+  // 如果集合为空则返回默认值，否则获取第一个元素的属性内容
 	return len ? fn( elems[ 0 ], key ) : emptyGet;
 };
+// 判断传进来的是不是一个元素或对象，对于基本数据类型只要传递的不是undefined和null都会返回true
 var acceptData = function( owner ) {
-
-	// Accepts only:
+	// 只接受:
 	//  - Node
-	//    - Node.ELEMENT_NODE
-	//    - Node.DOCUMENT_NODE
-	//  - Object
-	//    - Any
+	//    - 元素节点
+	//    - 文档节点
+  //  - Object
+  //    - 所有
 	return owner.nodeType === 1 || owner.nodeType === 9 || !( +owner.nodeType );
 };
-
-
-
-
 function Data() {
+  // 创建一个唯一的id，每创建一次Data，uid都会加1
 	this.expando = jQuery.expando + Data.uid++;
 }
-
+//  初始化uid
 Data.uid = 1;
 
 Data.prototype = {
-
+  // 缓存数据
 	cache: function( owner ) {
-
-		// Check if the owner object already has a cache
+		// 检查是否有缓存
 		var value = owner[ this.expando ];
-
-		// If not, create one
+		// 如果没有缓存则创建一个
 		if ( !value ) {
 			value = {};
-
-			// We can accept data for non-element nodes in modern browsers,
-			// but we should not, see #8335.
-			// Always return an empty object.
+      // 检查owner是不是元素或对象
 			if ( acceptData( owner ) ) {
-
-				// If it is a node unlikely to be stringify-ed or looped over
-				// use plain assignment
+				// 如果owner是元素节点则为此元素进行赋值
 				if ( owner.nodeType ) {
 					owner[ this.expando ] = value;
-
-				// Otherwise secure it in a non-enumerable property
-				// configurable must be true to allow the property to be
-				// deleted when data is removed
 				} else {
+          // 否则将其保存在不可枚举的属性中
 					Object.defineProperty( owner, this.expando, {
 						value: value,
 						configurable: true
@@ -4073,106 +4070,85 @@ Data.prototype = {
 				}
 			}
 		}
-
 		return value;
 	},
+  // 设置数据
 	set: function( owner, data, value ) {
 		var prop,
+      // 取缓存对象
 			cache = this.cache( owner );
-
-		// Handle: [ owner, key, value ] args
-		// Always use camelCase key (gh-2257)
 		if ( typeof data === "string" ) {
+      // 将data转换成驼峰命名，并将value储存到缓存中
 			cache[ jQuery.camelCase( data ) ] = value;
-
-		// Handle: [ owner, { properties } ] args
 		} else {
-
-			// Copy the properties one-by-one to the cache object
+			// 如果data是一个对象则循环这个对象将值拷贝到缓存对象中
 			for ( prop in data ) {
 				cache[ jQuery.camelCase( prop ) ] = data[ prop ];
 			}
 		}
 		return cache;
 	},
+  // 获取数据
 	get: function( owner, key ) {
+    // 存在key则取相应的值，否则取整个缓存对象
 		return key === undefined ?
 			this.cache( owner ) :
-
-			// Always use camelCase key (gh-2257)
 			owner[ this.expando ] && owner[ this.expando ][ jQuery.camelCase( key ) ];
 	},
+  // 存取接口
 	access: function( owner, key, value ) {
-
-		// In cases where either:
-		//
-		//   1. No key was specified
-		//   2. A string key was specified, but no value provided
-		//
-		// Take the "read" path and allow the get method to determine
-		// which value to return, respectively either:
-		//
-		//   1. The entire cache object
-		//   2. The data stored at the key
-		//
+    // 未指定key或key是一个字符串并且未指定value时执行获取数据
 		if ( key === undefined ||
 				( ( key && typeof key === "string" ) && value === undefined ) ) {
-
 			return this.get( owner, key );
 		}
-
-		// When the key is not a string, or both a key and value
-		// are specified, set or extend (existing objects) with either:
-		//
-		//   1. An object of properties
-		//   2. A key and value
-		//
+		// 当key不是一个字符串或指定了key和value时执行设置操作
 		this.set( owner, key, value );
-
-		// Since the "set" path can have two possible entry points
-		// return the expected data based on which path was taken[*]
+		// 如果指定了value则返回value，否则返回key
 		return value !== undefined ? value : key;
 	},
+  // 删除数据
 	remove: function( owner, key ) {
 		var i,
+      // 取缓存
 			cache = owner[ this.expando ];
-
+    // 没有缓存数据直接返回
 		if ( cache === undefined ) {
 			return;
 		}
-
+    // key不等于undefined
 		if ( key !== undefined ) {
 
-			// Support array or space separated string of keys
+			// 支持数组和空格分隔的键字符串
 			if ( Array.isArray( key ) ) {
 
-				// If key is an array of keys...
-				// We always set camelCase keys, so remove that.
+				// 将每个key转换成驼峰命名
 				key = key.map( jQuery.camelCase );
 			} else {
+        // 将key转换成驼峰命名
 				key = jQuery.camelCase( key );
 
-				// If a key with the spaces exists, use it.
-				// Otherwise, create an array by matching non-whitespace
+				// 先判断key在不在缓存中，如果不在则判断key是不是由空格分割的组
 				key = key in cache ?
 					[ key ] :
 					( key.match( rnothtmlwhite ) || [] );
 			}
-
+      // 循环删除缓存对应的项
 			i = key.length;
-
 			while ( i-- ) {
 				delete cache[ key[ i ] ];
 			}
 		}
 
-		// Remove the expando if there's no more data
+		// key等于undefined或缓存是个空对象
 		if ( key === undefined || jQuery.isEmptyObject( cache ) ) {
 
 			// Support: Chrome <=35 - 45
 			// Webkit & Blink performance suffers when deleting properties
 			// from DOM nodes, so set to undefined instead
 			// https://bugs.chromium.org/p/chromium/issues/detail?id=378607 (bug restricted)
+
+      // 如果是DOM节点则将对应的属性赋值成undefined，否则使用delete删除
 			if ( owner.nodeType ) {
 				owner[ this.expando ] = undefined;
 			} else {
@@ -4180,30 +4156,23 @@ Data.prototype = {
 			}
 		}
 	},
+  // 判断缓存是否存在，并且不是一个空对象
 	hasData: function( owner ) {
 		var cache = owner[ this.expando ];
 		return cache !== undefined && !jQuery.isEmptyObject( cache );
 	}
 };
+// jquery内部使用的数据缓存
 var dataPriv = new Data();
-
+// 用户使用的数据缓存
 var dataUser = new Data();
 
-
-
-//	Implementation Summary
-//
-//	1. Enforce API surface and semantic compatibility with 1.9.x branch
-//	2. Improve the module's maintainability by reducing the storage
-//		paths to a single mechanism.
-//	3. Use the same single mechanism to support "private" and "user" data.
-//	4. _Never_ expose "private" data to user code (TODO: Drop _data, _removeData)
-//	5. Avoid exposing implementation details on user objects (eg. expando properties)
-//	6. Provide a clear path for implementation upgrade to WeakMap in 2014
-
+// 匹配对象和数组
 var rbrace = /^(?:\{[\w\W]*\}|\[[\w\W]*\])$/,
+  // 匹配所有大写字母
 	rmultiDash = /[A-Z]/g;
 
+// 对数据进行处理并返回
 function getData( data ) {
 	if ( data === "true" ) {
 		return true;
@@ -4217,33 +4186,37 @@ function getData( data ) {
 		return null;
 	}
 
-	// Only convert to a number if it doesn't change the string
+	// 只有在不更改字符串的情况下才转换为数字
+  // +'1' + '' = '1'
+  // +'1a' + '' = 'NaN'
 	if ( data === +data + "" ) {
 		return +data;
 	}
-
+  // 如果data是字符串对象或数组，则转换成javascript对象或数组
 	if ( rbrace.test( data ) ) {
 		return JSON.parse( data );
 	}
 
 	return data;
 }
-
+// 获取元素data-属性内容，并将获取到的内容进行缓存
 function dataAttr( elem, key, data ) {
 	var name;
 
-	// If nothing was found internally, try to fetch any
-	// data from the HTML5 data-* attribute
+	// data为undefined并且elem是元素节点
 	if ( data === undefined && elem.nodeType === 1 ) {
+    // 将key转换为data-a-b格式
 		name = "data-" + key.replace( rmultiDash, "-$&" ).toLowerCase();
+    // 获取元素属性内容
 		data = elem.getAttribute( name );
-
+    // 如果data是字符串类型，只要data有值都会是字符串类型
 		if ( typeof data === "string" ) {
+      // 尝试对data进行处理并返回
 			try {
 				data = getData( data );
 			} catch ( e ) {}
 
-			// Make sure we set the data so it isn't changed later
+			// 将获取到的数据设置到缓存中
 			dataUser.set( elem, key, data );
 		} else {
 			data = undefined;
@@ -4253,62 +4226,66 @@ function dataAttr( elem, key, data ) {
 }
 
 jQuery.extend( {
+  // 判断是否存在数据
 	hasData: function( elem ) {
 		return dataUser.hasData( elem ) || dataPriv.hasData( elem );
 	},
-
+  // 数据的存取
 	data: function( elem, name, data ) {
 		return dataUser.access( elem, name, data );
 	},
-
+  // 删除数据
 	removeData: function( elem, name ) {
 		dataUser.remove( elem, name );
 	},
 
-	// TODO: Now that all calls to _data and _removeData have been replaced
-	// with direct calls to dataPriv methods, these can be deprecated.
+	// 以下方法为jquery内部使用
 	_data: function( elem, name, data ) {
 		return dataPriv.access( elem, name, data );
 	},
-
 	_removeData: function( elem, name ) {
 		dataPriv.remove( elem, name );
 	}
 } );
 
 jQuery.fn.extend( {
+  // 对数据进行缓存或获取
 	data: function( key, value ) {
 		var i, name, data,
+      // 对于取值只会取第一项
 			elem = this[ 0 ],
 			attrs = elem && elem.attributes;
 
-		// Gets all values
+		// 如果key为undefined则取整个缓存数据
 		if ( key === undefined ) {
+      // 如果当前数组长度为0，则返回undefined
 			if ( this.length ) {
+        // 取整个缓存数据
 				data = dataUser.get( elem );
-
+        // 如果是元素节点
 				if ( elem.nodeType === 1 && !dataPriv.get( elem, "hasDataAttrs" ) ) {
 					i = attrs.length;
 					while ( i-- ) {
-
-						// Support: IE 11 only
-						// The attrs elements can be null (#14894)
+						// 判断当前属性是否有值
 						if ( attrs[ i ] ) {
 							name = attrs[ i ].name;
 							if ( name.indexOf( "data-" ) === 0 ) {
+                // 截取data-后面的内容并转换成驼峰命名
 								name = jQuery.camelCase( name.slice( 5 ) );
+                // 如果data[name]中有值则会直接返回，否则获取元素data-属性中的内容
 								dataAttr( elem, name, data[ name ] );
 							}
 						}
 					}
+          // 为缓存对象设置hasDataAttrs属性，使下次访问时直接使用缓存数据
 					dataPriv.set( elem, "hasDataAttrs", true );
 				}
 			}
-
+      // 返回缓存数据
 			return data;
 		}
 
-		// Sets multiple values
+		// 如果key是一个对象则变量这个对象并为每一项设置
 		if ( typeof key === "object" ) {
 			return this.each( function() {
 				dataUser.set( this, key );
@@ -4317,41 +4294,27 @@ jQuery.fn.extend( {
 
 		return access( this, function( value ) {
 			var data;
-
-			// The calling jQuery object (element matches) is not empty
-			// (and therefore has an element appears at this[ 0 ]) and the
-			// `value` parameter was not undefined. An empty jQuery object
-			// will result in `undefined` for elem = this[ 0 ] which will
-			// throw an exception if an attempt to read a data cache is made.
-			if ( elem && value === undefined ) {
-
-				// Attempt to get data from the cache
-				// The key will always be camelCased in Data
+      // 获取数据
+      if ( elem && value === undefined ) {
 				data = dataUser.get( elem, key );
 				if ( data !== undefined ) {
 					return data;
 				}
-
-				// Attempt to "discover" the data in
-				// HTML5 custom data-* attrs
+				// 如果缓存数据中不存在则尝试使用元素的data-属性获取数据
 				data = dataAttr( elem, key );
 				if ( data !== undefined ) {
 					return data;
 				}
-
-				// We tried really hard, but the data doesn't exist.
+				// 返回undefined
 				return;
 			}
-
-			// Set the data...
+			// 设置data
 			this.each( function() {
-
-				// We always store the camelCased key
 				dataUser.set( this, key, value );
 			} );
 		}, null, value, arguments.length > 1, null, true );
 	},
-
+  // 删除数据，如果没有传递key则删除整个缓存对象，此方法不会对元素本身的data-属性造成影响
 	removeData: function( key ) {
 		return this.each( function() {
 			dataUser.remove( this, key );
@@ -4929,10 +4892,8 @@ function on( elem, types, selector, data, fn, one ) {
 		}
 		return elem;
 	}
-
+  // 当没有传递selector之后的参数时，将selector设为回调函数
 	if ( data == null && fn == null ) {
-
-		// ( types, fn )
 		fn = selector;
 		data = selector = undefined;
 	} else if ( fn == null ) {
@@ -5574,13 +5535,15 @@ jQuery.each( {
 } );
 
 jQuery.fn.extend( {
-
+  // 绑定事件
 	on: function( types, selector, data, fn ) {
 		return on( this, types, selector, data, fn );
 	},
+  // 绑定事件但只触发一次
 	one: function( types, selector, data, fn ) {
 		return on( this, types, selector, data, fn, 1 );
 	},
+  // 解除事件绑定
 	off: function( types, selector, fn ) {
 		var handleObj, type;
 		if ( types && types.preventDefault && types.handleObj ) {
@@ -5618,7 +5581,6 @@ jQuery.fn.extend( {
 		} );
 	}
 } );
-
 
 var
 
@@ -8286,20 +8248,19 @@ jQuery.fn.extend( {
 	}
 } );
 
-
+// 将以下所有事件添加到jquery原型中，实现on的简写，不传递参数则触发事件
 jQuery.each( ( "blur focus focusin focusout resize scroll click dblclick " +
 	"mousedown mouseup mousemove mouseover mouseout mouseenter mouseleave " +
 	"change select submit keydown keypress keyup contextmenu" ).split( " " ),
 	function( i, name ) {
 
-	// Handle event binding
 	jQuery.fn[ name ] = function( data, fn ) {
 		return arguments.length > 0 ?
 			this.on( name, null, data, fn ) :
 			this.trigger( name );
 	};
 } );
-
+// hover事件
 jQuery.fn.extend( {
 	hover: function( fnOver, fnOut ) {
 		return this.mouseenter( fnOver ).mouseleave( fnOut || fnOver );
