@@ -4928,6 +4928,7 @@ function on( elem, types, selector, data, fn, one ) {
 		// Use same guid so caller can remove using origFn
 		fn.guid = origFn.guid || ( origFn.guid = jQuery.guid++ );
 	}
+	// 为每一项添加事件
 	return elem.each( function() {
 		jQuery.event.add( this, types, fn, data, selector );
 	} );
@@ -4946,9 +4947,10 @@ jQuery.event = {
 		var handleObjIn, eventHandle, tmp,
 			events, t, handleObj,
 			special, handlers, type, namespaces, origType,
+			// 获取一个数据缓存
 			elemData = dataPriv.get( elem );
 
-		// Don't attach events to noData or text/comment nodes (but allow plain objects)
+		// 不要将事件附加到noData或文本/注释节点（但允许普通对象）
 		if ( !elemData ) {
 			return;
 		}
