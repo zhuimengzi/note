@@ -4901,20 +4901,20 @@ function on( elem, types, selector, data, fn, one ) {
 	if ( data == null && fn == null ) {
 		fn = selector;
 		data = selector = undefined;
+	//	以上条件如果不满足说明至少传递了selector和data
 	} else if ( fn == null ) {
+		// 如果selector是字符串则符合条件，将data作为回调函数
 		if ( typeof selector === "string" ) {
-
-			// ( types, selector, fn )
 			fn = data;
 			data = undefined;
 		} else {
-
-			// ( types, data, fn )
+			// 如果selector不是字符串则将selector当做数据，data作为回调函数
 			fn = data;
 			data = selector;
 			selector = undefined;
 		}
 	}
+	// 如果fn全等于false，则返回一个return false的函数，如果fn等于false则返回此元素
 	if ( fn === false ) {
 		fn = returnFalse;
 	} else if ( !fn ) {
