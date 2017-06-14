@@ -21,6 +21,8 @@
 2、回调和异步的区别
 异步是指当前任务没有执行完毕之前，你可以先去做其他的事，等当前的事做完再去执行相应的方法
 回调是指把一个函数作为参数来传递，当符合某个条件的时候此函数就会被执行
+
+3、jquery所暴露出来的大部分方法都是调用的其他方法，jquery为了解耦合常常将参数的判断和真正的方法进行拆分
  */
 
 ( function( global, factory ) {
@@ -4873,26 +4875,29 @@ function safeActiveElement() {
 		return document.activeElement;
 	} catch ( err ) { }
 }
-
+// 对参数进行判断并调整，最终调用的是jQuery.event.add
 function on( elem, types, selector, data, fn, one ) {
 	var origFn, type;
 
-	// Types can be a map of types/handlers
+	// 判断types是不是一个对象
 	if ( typeof types === "object" ) {
 
-		// ( types-Object, selector, data )
+		// 如果selector不是一个字符串则限定元素无效，尝试将此参数赋给data
 		if ( typeof selector !== "string" ) {
 
-			// ( types-Object, data )
+			// 如果传递了第4个参数，则使用第4个参数，否则使用第3个参数
 			data = data || selector;
+			// 元素限定无效
 			selector = undefined;
 		}
+		// 遍历types为元素添加多个事件 {click:fn, touchend:fn}
 		for ( type in types ) {
 			on( elem, type, selector, data, types[ type ], one );
 		}
+		// 返回当前绑定的元素
 		return elem;
 	}
-  // 当没有传递selector之后的参数时，将selector设为回调函数
+  // 当没有传递data和fn时，将selector当做回调函数
 	if ( data == null && fn == null ) {
 		fn = selector;
 		data = selector = undefined;
@@ -4915,20 +4920,18 @@ function on( elem, types, selector, data, fn, one ) {
 	} else if ( !fn ) {
 		return elem;
 	}
-
+	// 如果函数只需要执行一次，则执行后进行解绑
 	if ( one === 1 ) {
 		origFn = fn;
 		fn = function( event ) {
-
-			// Can use an empty set, since event contains the info
 			jQuery().off( event );
 			return origFn.apply( this, arguments );
 		};
 
-		// Use same guid so caller can remove using origFn
+		// 使用相同的guid
 		fn.guid = origFn.guid || ( origFn.guid = jQuery.guid++ );
 	}
-	// 为每一项添加事件
+	// 循环元素为每一项添加事件
 	return elem.each( function() {
 		jQuery.event.add( this, types, fn, data, selector );
 	} );
@@ -4950,20 +4953,19 @@ jQuery.event = {
 			// 获取一个数据缓存
 			elemData = dataPriv.get( elem );
 
-		// 不要将事件附加到noData或文本/注释节点（但允许普通对象）
+		// 不要将事件附加到空的元素、文本、注释节点（但允许普通对象）
 		if ( !elemData ) {
 			return;
 		}
 
-		// Caller can pass in an object of custom data in lieu of the handler
+		// 如果handler传递的是一个对象
 		if ( handler.handler ) {
 			handleObjIn = handler;
 			handler = handleObjIn.handler;
 			selector = handleObjIn.selector;
 		}
 
-		// Ensure that invalid selectors throw exceptions at attach time
-		// Evaluate against documentElement in case elem is a non-element node (e.g., document)
+		// 如果选择器存在则检查选择器是否正确
 		if ( selector ) {
 			jQuery.find.matchesSelector( documentElement, selector );
 		}
