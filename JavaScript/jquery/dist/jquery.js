@@ -4856,8 +4856,11 @@ var documentElement = document.documentElement;
 
 
 var
+	//
 	rkeyEvent = /^key/,
+	//
 	rmouseEvent = /^(?:mouse|pointer|contextmenu|drag|drop)|click/,
+	// 尝试取出事件的命名空间，如aaa.bbb
 	rtypenamespace = /^([^.]*)(?:\.(.+)|)/;
 
 function returnTrue() {
@@ -4920,7 +4923,7 @@ function on( elem, types, selector, data, fn, one ) {
 	} else if ( !fn ) {
 		return elem;
 	}
-	// 如果函数只需要执行一次，则执行后进行解绑
+	// 如果函数只需要执行一次，则对此函数进行包装，当事件触发后将此事件解绑，并执行之前保存下来的fn函数
 	if ( one === 1 ) {
 		origFn = fn;
 		fn = function( event ) {
@@ -4944,21 +4947,21 @@ function on( elem, types, selector, data, fn, one ) {
 jQuery.event = {
 
 	global: {},
-
+	// 添加事件
 	add: function( elem, types, handler, data, selector ) {
 
 		var handleObjIn, eventHandle, tmp,
 			events, t, handleObj,
 			special, handlers, type, namespaces, origType,
-			// 获取一个数据缓存
+			// 获取数据缓存
 			elemData = dataPriv.get( elem );
 
-		// 不要将事件附加到空的元素、文本、注释节点（但允许普通对象）
+		// 不要将事件附加到空的元素、文本、注释节点上（允许普通对象）
 		if ( !elemData ) {
 			return;
 		}
 
-		// 如果handler传递的是一个对象
+		// 如果handler是一个对象
 		if ( handler.handler ) {
 			handleObjIn = handler;
 			handler = handleObjIn.handler;
@@ -4970,48 +4973,52 @@ jQuery.event = {
 			jQuery.find.matchesSelector( documentElement, selector );
 		}
 
-		// Make sure that the handler has a unique ID, used to find/remove it later
+		// 确保处理程序具有唯一的ID，用于稍后查找/删除它
 		if ( !handler.guid ) {
 			handler.guid = jQuery.guid++;
 		}
 
-		// Init the element's event structure and main handler, if this is the first
+		// 如果此元素是第一次添加事件则初始化元素的事件结构和主处理程序
 		if ( !( events = elemData.events ) ) {
 			events = elemData.events = {};
 		}
 		if ( !( eventHandle = elemData.handle ) ) {
 			eventHandle = elemData.handle = function( e ) {
 
-				// Discard the second event of a jQuery.event.trigger() and
-				// when an event is called after a page has unloaded
+				// 丢弃jQuery.event.trigger（）的第二个事件，
+				// 当页面卸载后调用一个事件
 				return typeof jQuery !== "undefined" && jQuery.event.triggered !== e.type ?
 					jQuery.event.dispatch.apply( elem, arguments ) : undefined;
 			};
 		}
 
-		// Handle multiple events separated by a space
+		// 处理由空格分隔的多个事件
 		types = ( types || "" ).match( rnothtmlwhite ) || [ "" ];
 		t = types.length;
 		while ( t-- ) {
+			// 取出事件类型和命名空间，如aa.bb
 			tmp = rtypenamespace.exec( types[ t ] ) || [];
+			// 取事件类型
 			type = origType = tmp[ 1 ];
+			// 取命名空间
 			namespaces = ( tmp[ 2 ] || "" ).split( "." ).sort();
 
-			// There *must* be a type, no attaching namespace-only handlers
+			// 不对空的事件类型进行处理
 			if ( !type ) {
 				continue;
 			}
 
-			// If event changes its type, use the special event handlers for the changed type
+			// 事件是否会改变当前状态，如果会则使用特殊事件
 			special = jQuery.event.special[ type ] || {};
 
-			// If selector defined, determine special event api type, otherwise given type
+			// 如果有selector并且不是特殊事件则使用事件冒泡，否则直接在该元素上绑定，如果是特殊事件如自定义事件则使用用户传递的事件，
+			// 应该是判断此事件是不是支持冒泡吧
 			type = ( selector ? special.delegateType : special.bindType ) || type;
 
 			// Update special based on newly reset type
 			special = jQuery.event.special[ type ] || {};
 
-			// handleObj is passed to all event handlers
+			// 组装特殊事件所需的信息
 			handleObj = jQuery.extend( {
 				type: type,
 				origType: origType,
@@ -5037,7 +5044,7 @@ jQuery.event = {
 					}
 				}
 			}
-
+			// 处理特殊事件
 			if ( special.add ) {
 				special.add.call( elem, handleObj );
 
