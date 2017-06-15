@@ -4878,17 +4878,17 @@ function safeActiveElement() {
 		return document.activeElement;
 	} catch ( err ) { }
 }
-// 对参数进行判断并调整，最终调用的是jQuery.event.add
+// 由于某些参数不是必须的，所以在使用上这些参数的位置就不一定正确，因此需要进行相关调整
+// on方法只是对参数进行调整，最终调用的是jQuery.event.add
 function on( elem, types, selector, data, fn, one ) {
 	var origFn, type;
-
-	// 判断types是不是一个对象
+	// types可以是一个对象，里面传递多个事件
 	if ( typeof types === "object" ) {
 
-		// 如果selector不是一个字符串则限定元素无效，尝试将此参数赋给data
+		// 如果selector不是一个字符串则无法用来限定元素，尝试将此参数当做data来使用
 		if ( typeof selector !== "string" ) {
 
-			// 如果传递了第4个参数，则使用第4个参数，否则使用第3个参数
+			// 如果已经传递了data，就不使用selector作为data数据
 			data = data || selector;
 			// 元素限定无效
 			selector = undefined;
@@ -4900,24 +4900,25 @@ function on( elem, types, selector, data, fn, one ) {
 		// 返回当前绑定的元素
 		return elem;
 	}
-  // 当没有传递data和fn时，将selector当做回调函数
+
+  // data和selector都不是必须的，当没有传递参数3和参数4时，将selector当做回调函数
 	if ( data == null && fn == null ) {
 		fn = selector;
 		data = selector = undefined;
-	//	以上条件如果不满足说明至少传递了selector和data
+	//	如果fn不存在
 	} else if ( fn == null ) {
-		// 如果selector是字符串则符合条件，将data作为回调函数
+		// 如果selector是字符串则符合条件，不对selector做处理，尝试将data作为回调函数
 		if ( typeof selector === "string" ) {
 			fn = data;
 			data = undefined;
 		} else {
-			// 如果selector不是字符串则将selector当做数据，data作为回调函数
+			// 如果selector不是字符串则尝试作为data来使用，data作为回调函数
 			fn = data;
 			data = selector;
 			selector = undefined;
 		}
 	}
-	// 如果fn全等于false，则返回一个return false的函数，如果fn等于false则返回此元素
+	// 如果fn全等于false，则返回一个return false的函数（简写），如果fn是不合法的参数则返回此元素
 	if ( fn === false ) {
 		fn = returnFalse;
 	} else if ( !fn ) {
@@ -4925,13 +4926,17 @@ function on( elem, types, selector, data, fn, one ) {
 	}
 	// 如果函数只需要执行一次，则对此函数进行包装，当事件触发后将此事件解绑，并执行之前保存下来的fn函数
 	if ( one === 1 ) {
+		// 缓存原函数
 		origFn = fn;
+		// 对原函数进行包装
 		fn = function( event ) {
+			// 解绑包装的函数
 			jQuery().off( event );
+			// 调用一次原函数
 			return origFn.apply( this, arguments );
 		};
 
-		// 使用相同的guid
+		// 将原函数guid赋值给包装函数
 		fn.guid = origFn.guid || ( origFn.guid = jQuery.guid++ );
 	}
 	// 循环元素为每一项添加事件
@@ -4953,40 +4958,40 @@ jQuery.event = {
 		var handleObjIn, eventHandle, tmp,
 			events, t, handleObj,
 			special, handlers, type, namespaces, origType,
-			// 获取数据缓存
+			// 如果此元素是第一次添加事件，则获取一个空对象，此对象用来保存相关事件信息
 			elemData = dataPriv.get( elem );
 
-		// 不要将事件附加到空的元素、文本、注释节点上（允许普通对象）
+		// 当elem不是元素节点时，直接返回（允许普通对象）
 		if ( !elemData ) {
 			return;
 		}
 
-		// 如果handler是一个对象
+		// 如果handler是一个对象 {handler：handler，selector：selector}
 		if ( handler.handler ) {
 			handleObjIn = handler;
 			handler = handleObjIn.handler;
 			selector = handleObjIn.selector;
 		}
 
-		// 如果选择器存在则检查选择器是否正确
+		// 如果限定符存在则检查限定符是否是正确的选择器
 		if ( selector ) {
 			jQuery.find.matchesSelector( documentElement, selector );
 		}
 
-		// 确保处理程序具有唯一的ID，用于稍后查找/删除它
+		// 给回调函数分配一个唯一的ID，用于后期的查找和删除
 		if ( !handler.guid ) {
 			handler.guid = jQuery.guid++;
 		}
 
-		// 如果此元素是第一次添加事件则初始化元素的事件结构和主处理程序
+		// 获取事件对象，如果没有则设置成空对象
 		if ( !( events = elemData.events ) ) {
 			events = elemData.events = {};
 		}
+		// 如果handle方法不存在则添加一个
 		if ( !( eventHandle = elemData.handle ) ) {
 			eventHandle = elemData.handle = function( e ) {
 
-				// 丢弃jQuery.event.trigger（）的第二个事件，
-				// 当页面卸载后调用一个事件
+
 				return typeof jQuery !== "undefined" && jQuery.event.triggered !== e.type ?
 					jQuery.event.dispatch.apply( elem, arguments ) : undefined;
 			};
@@ -5008,7 +5013,7 @@ jQuery.event = {
 				continue;
 			}
 
-			// 事件是否会改变当前状态，如果会则使用特殊事件
+			// 判断type是否是一个特殊事件，如果是则获取special中的相应的事件
 			special = jQuery.event.special[ type ] || {};
 
 			// 如果有selector并且不是特殊事件则使用事件冒泡，否则直接在该元素上绑定，如果是特殊事件如自定义事件则使用用户传递的事件，
@@ -5030,12 +5035,13 @@ jQuery.event = {
 				namespace: namespaces.join( "." )
 			}, handleObjIn );
 
-			// Init the event handler queue if we're the first
+			// 第一次添加事件处理时，初始化事件处理函数队列
 			if ( !( handlers = events[ type ] ) ) {
 				handlers = events[ type ] = [];
+				// 计数
 				handlers.delegateCount = 0;
 
-				// Only use addEventListener if the special events handler returns false
+				// 如果不是特殊事件直接使用addEventListener绑定事件
 				if ( !special.setup ||
 					special.setup.call( elem, data, namespaces, eventHandle ) === false ) {
 
@@ -5046,14 +5052,15 @@ jQuery.event = {
 			}
 			// 处理特殊事件
 			if ( special.add ) {
+				// 添加事件
 				special.add.call( elem, handleObj );
-
+				// 设置处理函数的ID
 				if ( !handleObj.handler.guid ) {
 					handleObj.handler.guid = handler.guid;
 				}
 			}
 
-			// Add to the element's handler list, delegates in front
+			// 将事件处理函数推入处理列表
 			if ( selector ) {
 				handlers.splice( handlers.delegateCount++, 0, handleObj );
 			} else {
@@ -5066,27 +5073,31 @@ jQuery.event = {
 
 	},
 
-	// Detach an event or set of events from an element
+	// 删除事件
 	remove: function( elem, types, handler, selector, mappedTypes ) {
 
 		var j, origCount, tmp,
 			events, t, handleObj,
 			special, handlers, type, namespaces, origType,
+			// 判断元素是否有相应的缓存数据，如果有则取出
 			elemData = dataPriv.hasData( elem ) && dataPriv.get( elem );
-
+		// 如果元素缓存的事件不存在直接返回
 		if ( !elemData || !( events = elemData.events ) ) {
 			return;
 		}
 
-		// Once for each type.namespace in types; type may be omitted
+		// 提取事件类型
 		types = ( types || "" ).match( rnothtmlwhite ) || [ "" ];
 		t = types.length;
 		while ( t-- ) {
+			// 提取事件类型和命名空间
 			tmp = rtypenamespace.exec( types[ t ] ) || [];
+			// 提取事件类型
 			type = origType = tmp[ 1 ];
+			// 提取命名空间
 			namespaces = ( tmp[ 2 ] || "" ).split( "." ).sort();
 
-			// Unbind all events (on this namespace, if provided) for the element
+			// 如果没有提供事件类型，则删除所有事件
 			if ( !type ) {
 				for ( type in events ) {
 					jQuery.event.remove( elem, type + types[ t ], handler, selector, true );
@@ -5139,7 +5150,7 @@ jQuery.event = {
 			dataPriv.remove( elem, "handle events" );
 		}
 	},
-
+	// 调节事件委托
 	dispatch: function( nativeEvent ) {
 
 		// Make a writable jQuery.Event from the native event object
@@ -5295,7 +5306,7 @@ jQuery.event = {
 			originalEvent :
 			new jQuery.Event( originalEvent );
 	},
-
+	// 对某些事件类型的特殊行为和属性进行处理
 	special: {
 		load: {
 
