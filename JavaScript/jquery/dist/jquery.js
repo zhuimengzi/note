@@ -1,7 +1,7 @@
 /*!
  * jQuery JavaScript Library v3.2.1
  * https://jquery.com/
- *123
+ *
  * Includes Sizzle.js
  * https://sizzlejs.com/
  *
@@ -4950,9 +4950,8 @@ function on( elem, types, selector, data, fn, one ) {
  * Props to Dean Edwards' addEvent library for many of the ideas.
  */
 jQuery.event = {
-
 	global: {},
-	// 添加事件
+	// 绑定一个或多个类型的事件监听函数
 	add: function( elem, types, handler, data, selector ) {
 
 		var handleObjIn, eventHandle, tmp,
@@ -5070,10 +5069,8 @@ jQuery.event = {
 			// Keep track of which events have ever been used, for event optimization
 			jQuery.event.global[ type ] = true;
 		}
-
 	},
-
-	// 删除事件
+	// 删除一个或多个类型的事件监听函数
 	remove: function( elem, types, handler, selector, mappedTypes ) {
 
 		var j, origCount, tmp,
@@ -5150,7 +5147,7 @@ jQuery.event = {
 			dataPriv.remove( elem, "handle events" );
 		}
 	},
-	// 调节事件委托
+	// 分发事件，执行事件监听函数
 	dispatch: function( nativeEvent ) {
 
 		// Make a writable jQuery.Event from the native event object
@@ -5214,7 +5211,6 @@ jQuery.event = {
 
 		return event.result;
 	},
-
 	handlers: function( event, handlers ) {
 		var i, handleObj, sel, matchedHandlers, matchedSelectors,
 			handlerQueue = [],
@@ -5272,7 +5268,6 @@ jQuery.event = {
 
 		return handlerQueue;
 	},
-
 	addProp: function( name, hook ) {
 		Object.defineProperty( jQuery.Event.prototype, name, {
 			enumerable: true,
@@ -5300,13 +5295,13 @@ jQuery.event = {
 			}
 		} );
 	},
-
+	// 把原生事件对象封装成jquery事件对象，并修正不兼容属性
 	fix: function( originalEvent ) {
 		return originalEvent[ jQuery.expando ] ?
 			originalEvent :
 			new jQuery.Event( originalEvent );
 	},
-	// 对某些事件类型的特殊行为和属性进行处理
+	// 事件修正对象集
 	special: {
 		load: {
 
@@ -5361,7 +5356,7 @@ jQuery.event = {
 		}
 	}
 };
-
+// 移出主监听函数
 jQuery.removeEvent = function( elem, type, handle ) {
 
 	// This "if" is needed for plain objects
@@ -5369,7 +5364,7 @@ jQuery.removeEvent = function( elem, type, handle ) {
 		elem.removeEventListener( type, handle );
 	}
 };
-
+// jquery事件对象
 jQuery.Event = function( src, props ) {
 
 	// Allow instantiation without the 'new' keyword
@@ -5427,7 +5422,7 @@ jQuery.Event.prototype = {
 	isPropagationStopped: returnFalse,
 	isImmediatePropagationStopped: returnFalse,
 	isSimulated: false,
-
+	// 阻止浏览器默认行为
 	preventDefault: function() {
 		var e = this.originalEvent;
 
@@ -5437,6 +5432,7 @@ jQuery.Event.prototype = {
 			e.preventDefault();
 		}
 	},
+	// 停止事件传播
 	stopPropagation: function() {
 		var e = this.originalEvent;
 
@@ -5446,6 +5442,7 @@ jQuery.Event.prototype = {
 			e.stopPropagation();
 		}
 	},
+	// 立即停止事件执行和事件传播
 	stopImmediatePropagation: function() {
 		var e = this.originalEvent;
 
@@ -5528,6 +5525,7 @@ jQuery.each( {
 // Safari sends mouseenter too often; see:
 // https://bugs.chromium.org/p/chromium/issues/detail?id=470258
 // for the description of the bug (it existed in older Chrome versions as well).
+// 初始化事件对应的修正对象
 jQuery.each( {
 	mouseenter: "mouseover",
 	mouseleave: "mouseout",
@@ -5557,15 +5555,15 @@ jQuery.each( {
 } );
 
 jQuery.fn.extend( {
-  // 绑定事件
+  // 统一的事件绑定方法
 	on: function( types, selector, data, fn ) {
 		return on( this, types, selector, data, fn );
 	},
-  // 绑定事件但只触发一次
+  // 绑定最多执行一次的事件监听函数
 	one: function( types, selector, data, fn ) {
 		return on( this, types, selector, data, fn, 1 );
 	},
-  // 解除事件绑定
+  // 统一的事件移出方法
 	off: function( types, selector, fn ) {
 		var handleObj, type;
 		if ( types && types.preventDefault && types.handleObj ) {
