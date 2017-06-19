@@ -4953,7 +4953,7 @@ jQuery.event = {
 	global: {},
 	// 绑定一个或多个类型的事件监听函数
 	add: function( elem, types, handler, data, selector ) {
-
+		// handlers:元素所关联的监听对象数组，handleObj：监听对象
 		var handleObjIn, eventHandle, tmp,
 			events, t, handleObj,
 			special, handlers, type, namespaces, origType,
