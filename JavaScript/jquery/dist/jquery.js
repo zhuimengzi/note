@@ -4851,6 +4851,7 @@ function buildFragment( elems, context, scripts, selection, ignored ) {
 	div.innerHTML = "<textarea>x</textarea>";
 	support.noCloneChecked = !!div.cloneNode( true ).lastChild.defaultValue;
 } )();
+// 根节点
 var documentElement = document.documentElement;
 
 
@@ -4871,8 +4872,7 @@ function returnFalse() {
 	return false;
 }
 
-// Support: IE <=9 only
-// See #13393 for more info
+// 当前获得焦点的元素
 function safeActiveElement() {
 	try {
 		return document.activeElement;
@@ -5065,7 +5065,7 @@ jQuery.event = {
 				handlers.push( handleObj );
 			}
 
-			// Keep track of which events have ever been used, for event optimization
+			// 标记事件被使用过，用于事件优化
 			jQuery.event.global[ type ] = true;
 		}
 	},
@@ -5270,7 +5270,7 @@ jQuery.event = {
 
 		return handlerQueue;
 	},
-	// 为event添加新属性，支持getter和setter
+	// 为Event原型添加新属性，支持getter和setter
 	addProp: function( name, hook ) {
 		Object.defineProperty( jQuery.Event.prototype, name, {
 			enumerable: true,
@@ -5458,7 +5458,7 @@ jQuery.Event.prototype = {
 	}
 };
 
-// Includes all common event props including KeyEvent and MouseEvent specific props
+// 为Event原型添加新属性
 jQuery.each( {
 	altKey: true,
 	bubbles: true,
