@@ -406,11 +406,12 @@ jQuery.extend( {
 			( text + "" ).replace( rtrim, "" );
 	},
 
-	// results is for internal usage only
+	// 将一个HTML元素集合转换成对应的数组
 	makeArray: function( arr, results ) {
 		var ret = results || [];
 
 		if ( arr != null ) {
+			// 符合数组特性调用merge方法，将arr中的每一项复制到ret中
 			if ( isArrayLike( Object( arr ) ) ) {
 				jQuery.merge( ret,
 					typeof arr === "string" ?
@@ -444,7 +445,7 @@ jQuery.extend( {
 
 		return first;
 	},
-
+	// 
 	grep: function( elems, callback, invert ) {
 		var callbackInverse,
 			matches = [],
@@ -464,13 +465,13 @@ jQuery.extend( {
 		return matches;
 	},
 
-	// arg is for internal usage only
+	// arg仅供内部使用
 	map: function( elems, callback, arg ) {
 		var length, value,
 			i = 0,
 			ret = [];
 
-		// Go through the array, translating each of the items to their new values
+		// 通过数组，将每个项目转换为新值
 		if ( isArrayLike( elems ) ) {
 			length = elems.length;
 			for ( ; i < length; i++ ) {
@@ -2871,54 +2872,59 @@ function nodeName( elem, name ) {
 var rsingleTag = ( /^<([a-z][^\/\0>:\x20\t\r\n\f]*)[\x20\t\r\n\f]*\/?>(?:<\/\1>|)$/i );
 
 
-
+// 匹配选择器
 var risSimple = /^.[^:#\[\.,]*$/;
 
-// Implement the identical functionality for filter and not
+// 对当前匹配元素集合进行过滤
 function winnow( elements, qualifier, not ) {
+	// 如果qualifier是一个函数
 	if ( jQuery.isFunction( qualifier ) ) {
+		// 在每个元素上调用qualifier方法，并检测返回值是否和not一致，如果一致则保留，否则抛弃
 		return jQuery.grep( elements, function( elem, i ) {
 			return !!qualifier.call( elem, i, elem ) !== not;
 		} );
 	}
 
-	// Single element
+	// 如果qualifier是一个元素
 	if ( qualifier.nodeType ) {
 		return jQuery.grep( elements, function( elem ) {
+			// 判断elem是否和qualifier相同，并检测返回值是否和not一致，如果一致则保留，否则抛弃
 			return ( elem === qualifier ) !== not;
 		} );
 	}
 
-	// Arraylike of elements (jQuery, arguments, Array)
+	// 如果qualifier是 (jQuery, arguments, Array)
 	if ( typeof qualifier !== "string" ) {
 		return jQuery.grep( elements, function( elem ) {
+			// 查找elem是否在qualifier数组中，并检测返回值是否和not一致，如果一致则保留，否则抛弃
 			return ( indexOf.call( qualifier, elem ) > -1 ) !== not;
 		} );
 	}
 
-	// Simple selector that can be filtered directly, removing non-Elements
+	// 如果qualifier是简单的选择器
 	if ( risSimple.test( qualifier ) ) {
 		return jQuery.filter( qualifier, elements, not );
 	}
 
-	// Complex selector, compare the two sets, removing non-Elements
+	// 复合选择器，先对元素进行过滤
 	qualifier = jQuery.filter( qualifier, elements );
 	return jQuery.grep( elements, function( elem ) {
 		return ( indexOf.call( qualifier, elem ) > -1 ) !== not && elem.nodeType === 1;
 	} );
 }
-
+// 使用选择器表达式对elems进行过滤
 jQuery.filter = function( expr, elems, not ) {
 	var elem = elems[ 0 ];
 
 	if ( not ) {
+		// 修正选择器表达式
 		expr = ":not(" + expr + ")";
 	}
-
+	// 如果元素集合只有一个元素则调用matchesSelector来检查元素是否匹配选择器表达式
 	if ( elems.length === 1 && elem.nodeType === 1 ) {
 		return jQuery.find.matchesSelector( elem, expr ) ? [ elem ] : [];
 	}
-
+	// 如果含有多个元素则先调用grep方法进行过滤，判断每一项是不是dom元素节点，对过滤后的元素放到matches方法中匹配
 	return jQuery.find.matches( expr, jQuery.grep( elems, function( elem ) {
 		return elem.nodeType === 1;
 	} ) );
@@ -2950,18 +2956,19 @@ jQuery.fn.extend( {
 
 		return len > 1 ? jQuery.uniqueSort( ret ) : ret;
 	},
+	// 返回与选择器相匹配的元素
 	filter: function( selector ) {
 		return this.pushStack( winnow( this, selector || [], false ) );
 	},
+	// 返回与选择器不匹配的元素
 	not: function( selector ) {
 		return this.pushStack( winnow( this, selector || [], true ) );
 	},
+	// 只要有一个元素可以匹配给定的参数就返回true
 	is: function( selector ) {
 		return !!winnow(
 			this,
-
-			// If this is a positional/relative selector, check membership in the returned set
-			// so $("p:first").is("p:last") won't return true for a doc with two "p".
+			// $("li:first").is("li:last")这样一个选择器返回false。请注意，由于位置选择器jQuery添加的功能，而不是W3C标准，我们建议在可行情况下使用W3C的选择器
 			typeof selector === "string" && rneedsContext.test( selector ) ?
 				jQuery( selector ) :
 				selector || [],
@@ -3101,20 +3108,23 @@ var rparentsprev = /^(?:parents|prev(?:Until|All))/,
 	};
 
 jQuery.fn.extend( {
+	// 检测是否一个元素在另一个之内
 	has: function( target ) {
+		// 获取target元素
 		var targets = jQuery( target, this ),
 			l = targets.length;
 
 		return this.filter( function() {
 			var i = 0;
 			for ( ; i < l; i++ ) {
+				// 只要有一个元素符合条件就返回true
 				if ( jQuery.contains( this, targets[ i ] ) ) {
 					return true;
 				}
 			}
 		} );
 	},
-
+	// 从元素本身开始，在DOM 树上逐级向上级元素匹配，并返回最先匹配的祖先元素
 	closest: function( selectors, context ) {
 		var cur,
 			i = 0,
@@ -3125,13 +3135,14 @@ jQuery.fn.extend( {
 		// Positional selectors never match, since there's no _selection_ context
 		if ( !rneedsContext.test( selectors ) ) {
 			for ( ; i < l; i++ ) {
+				// 沿着dom树往上遍历，查找最近的一个相匹配元素
 				for ( cur = this[ i ]; cur && cur !== context; cur = cur.parentNode ) {
 
-					// Always skip document fragments
+					// 始终跳过文档片段
 					if ( cur.nodeType < 11 && ( targets ?
 						targets.index( cur ) > -1 :
 
-						// Don't pass non-elements to Sizzle
+						// 不要将非元素传递给Sizzle
 						cur.nodeType === 1 &&
 							jQuery.find.matchesSelector( cur, selectors ) ) ) {
 
@@ -3141,39 +3152,41 @@ jQuery.fn.extend( {
 				}
 			}
 		}
-
+		// 如果找到了多个匹配参数的元素则调用uniqueSort方法进行去重和排序
 		return this.pushStack( matched.length > 1 ? jQuery.uniqueSort( matched ) : matched );
 	},
 
-	// Determine the position of an element within the set
+	// 确定集合中元素的位置
 	index: function( elem ) {
 
-		// No argument, return index in parent
+		// 无参数
 		if ( !elem ) {
+			// 如果有父元素，则获取此元素之前兄弟元素的长度
 			return ( this[ 0 ] && this[ 0 ].parentNode ) ? this.first().prevAll().length : -1;
 		}
 
-		// Index in selector
+		// 如果elem是字符串则先将获取元素，再将当前元素放到获取的元素中查找
 		if ( typeof elem === "string" ) {
 			return indexOf.call( jQuery( elem ), this[ 0 ] );
 		}
 
-		// Locate the position of the desired element
+		// 将elem放到当前对象中查找
 		return indexOf.call( this,
 
-			// If it receives a jQuery object, the first element is used
+			// 如果接收到jQuery对象，则使用第一个元素
 			elem.jquery ? elem[ 0 ] : elem
 		);
 	},
-
+	// 用当前jquery对象构造一个新的jquery对象
 	add: function( selector, context ) {
+		// 将当前jquery对象和新jquery对象进行合并，并去重和排序，返回一个新的jquery对象
 		return this.pushStack(
 			jQuery.uniqueSort(
 				jQuery.merge( this.get(), jQuery( selector, context ) )
 			)
 		);
 	},
-
+	// 将当前元素集合和之前的进行合并
 	addBack: function( selector ) {
 		return this.add( selector == null ?
 			this.prevObject : this.prevObject.filter( selector )
@@ -7629,19 +7642,21 @@ jQuery.extend( {
 		var ret, hooks,
 			nType = elem.nodeType;
 
-		// Don't get/set properties on text, comment and attribute nodes
+		// 不要在文本，注释和属性节点上获取/设置属性
 		if ( nType === 3 || nType === 8 || nType === 2 ) {
 			return;
 		}
-
+		// 不是XML元素
 		if ( nType !== 1 || !jQuery.isXMLDoc( elem ) ) {
 
-			// Fix name and attach hooks
+			// 修复名称
 			name = jQuery.propFix[ name ] || name;
+			// 
 			hooks = jQuery.propHooks[ name ];
 		}
-
+		// 如果value不等于空，则表示设置值
 		if ( value !== undefined ) {
+			// 设置成功返回set方法的返回值，否则返回elem的相应属性.但是必须注意：这里的propHooks里面的属性是固定的
 			if ( hooks && "set" in hooks &&
 				( ret = hooks.set( elem, value, name ) ) !== undefined ) {
 				return ret;
@@ -7649,7 +7664,7 @@ jQuery.extend( {
 
 			return ( elem[ name ] = value );
 		}
-
+		// 获取相应属性
 		if ( hooks && "get" in hooks && ( ret = hooks.get( elem, name ) ) !== null ) {
 			return ret;
 		}
@@ -7660,12 +7675,9 @@ jQuery.extend( {
 	propHooks: {
 		tabIndex: {
 			get: function( elem ) {
-
-				// Support: IE <=9 - 11 only
-				// elem.tabIndex doesn't always return the
-				// correct value when it hasn't been explicitly set
-				// https://web.archive.org/web/20141116233347/http://fluidproject.org/blog/2008/01/09/getting-setting-and-removing-tabindex-values-with-javascript/
-				// Use proper attribute retrieval(#12072)
+				// 因为tabIndex如果没有设置可能会返回不正确的值!  
+                // 这里还是调用jQueyr.find.attr方法，不过传入的不是驼峰写法!如果调用该方法没有获取到有效的tabIndex  
+               // 那么要对标签进行判断，如果是input/select/textarea/button/object那么返回0；如果是a/area同时有href 也返回0，否则返回-1
 				var tabindex = jQuery.find.attr( elem, "tabindex" );
 
 				if ( tabindex ) {
@@ -7726,7 +7738,7 @@ if ( !support.optSelected ) {
 		}
 	};
 }
-
+// 修复元素属性名
 jQuery.each( [
 	"tabIndex",
 	"readOnly",
@@ -8371,6 +8383,7 @@ jQuery.parseXML = function( data ) {
 
 
 var
+	// 空数组
 	rbracket = /\[\]$/,
 	rCRLF = /\r?\n/g,
 	rsubmitterTypes = /^(?:submit|button|image|reset|file)$/i,
@@ -8378,19 +8391,20 @@ var
 
 function buildParams( prefix, obj, traditional, add ) {
 	var name;
-
+	// 如果obj是一个数组
 	if ( Array.isArray( obj ) ) {
 
-		// Serialize array item.
+		// 序列化数组
 		jQuery.each( obj, function( i, v ) {
+			// 如果traditional为true或prefix是个空数组
 			if ( traditional || rbracket.test( prefix ) ) {
 
-				// Treat each array item as a scalar.
+				// 将prefix作为key
 				add( prefix, v );
 
 			} else {
 
-				// Item is non-scalar (array or object), encode its numeric index.
+				// Item是数组或对象，对其数字索引进行编码。
 				buildParams(
 					prefix + "[" + ( typeof v === "object" && v != null ? i : "" ) + "]",
 					v,
@@ -8402,38 +8416,36 @@ function buildParams( prefix, obj, traditional, add ) {
 
 	} else if ( !traditional && jQuery.type( obj ) === "object" ) {
 
-		// Serialize object item.
+		// 序列化对象，深度遍历
 		for ( name in obj ) {
 			buildParams( prefix + "[" + name + "]", obj[ name ], traditional, add );
 		}
 
 	} else {
 
-		// Serialize scalar item.
 		add( prefix, obj );
 	}
 }
 
-// Serialize an array of form elements or a set of
+// 序列化一个表单元素或一组数组
 // key/values into a query string
 jQuery.param = function( a, traditional ) {
 	var prefix,
 		s = [],
 		add = function( key, valueOrFunction ) {
-
-			// If value is a function, invoke it and use its return value
+			// 如果value是一个函数，则调用它并使用它的返回值
 			var value = jQuery.isFunction( valueOrFunction ) ?
 				valueOrFunction() :
 				valueOrFunction;
-
+			// 将key、value编码，放入到s数组中
 			s[ s.length ] = encodeURIComponent( key ) + "=" +
 				encodeURIComponent( value == null ? "" : value );
 		};
 
-	// If an array was passed in, assume that it is an array of form elements.
+	// 判断是不是一个数组或jquery对象   假设是一个元素数组
 	if ( Array.isArray( a ) || ( a.jquery && !jQuery.isPlainObject( a ) ) ) {
 
-		// Serialize the form elements
+		// 序列化元素
 		jQuery.each( a, function() {
 			add( this.name, this.value );
 		} );
@@ -8447,36 +8459,41 @@ jQuery.param = function( a, traditional ) {
 		}
 	}
 
-	// Return the resulting serialization
+	// 返回结果序列化
 	return s.join( "&" );
 };
-
+// 对表单元素进行序列化
 jQuery.fn.extend( {
+	// 返回一个已序列化的值
 	serialize: function() {
 		return jQuery.param( this.serializeArray() );
 	},
+	// 返回一个序列化数组
 	serializeArray: function() {
 		return this.map( function() {
 
-			// Can add propHook for "elements" to filter or add form elements
+			// 返回form元素中的elements集合
 			var elements = jQuery.prop( this, "elements" );
+			// makeArray转换成真数组
 			return elements ? jQuery.makeArray( elements ) : this;
 		} )
 		.filter( function() {
+			// 获取元素类型
 			var type = this.type;
 
-			// Use .is( ":disabled" ) so that fieldset[disabled] works
+			// 过滤掉没有name、disabled的、可以提交的几个标签，如过是可选中的元素，则checked为真
 			return this.name && !jQuery( this ).is( ":disabled" ) &&
 				rsubmittable.test( this.nodeName ) && !rsubmitterTypes.test( type ) &&
 				( this.checked || !rcheckableType.test( type ) );
 		} )
 		.map( function( i, elem ) {
+			// 获取元素value
 			var val = jQuery( this ).val();
-
+			// 如果值为null或undefined
 			if ( val == null ) {
 				return null;
 			}
-
+			// 如果值是一个数组
 			if ( Array.isArray( val ) ) {
 				return jQuery.map( val, function( val ) {
 					return { name: elem.name, value: val.replace( rCRLF, "\r\n" ) };
@@ -8855,47 +8872,46 @@ jQuery.extend( {
 
 	ajaxPrefilter: addToPrefiltersOrTransports( prefilters ),
 	ajaxTransport: addToPrefiltersOrTransports( transports ),
-
-	// Main method
+    // 核心方法
 	ajax: function( url, options ) {
 
-		// If url is an object, simulate pre-1.5 signature
+		// 对参数进行调整
 		if ( typeof url === "object" ) {
 			options = url;
 			url = undefined;
 		}
 
-		// Force options to be an object
+		// 如果没有设置则默认空对象
 		options = options || {};
 
 		var transport,
 
-			// URL without anti-cache param
+			// 缓存参数的URL
 			cacheURL,
 
-			// Response headers
+			// 响应头
 			responseHeadersString,
 			responseHeaders,
 
-			// timeout handle
+			// 超时时间
 			timeoutTimer,
 
-			// Url cleanup var
+			// 网址清理变量
 			urlAnchor,
 
-			// Request state (becomes false upon send and true upon completion)
+			// 请求状态（发送时变为假，完成时为真）
 			completed,
 
-			// To know if global events are to be dispatched
+			// 要知道是否要发送全局事件
 			fireGlobals,
 
-			// Loop variable
+			// 循环时的变量
 			i,
 
-			// uncached part of the url
+			// 未压缩的部分url
 			uncached,
 
-			// Create the final options object
+			// 和jQuery.ajaxSettings对象进行合并
 			s = jQuery.ajaxSetup( {}, options ),
 
 			// Callbacks context
@@ -9303,18 +9319,18 @@ jQuery.extend( {
 		return jQuery.get( url, undefined, callback, "script" );
 	}
 } );
-
+// 最终还是调用的ajax方法
 jQuery.each( [ "get", "post" ], function( i, method ) {
 	jQuery[ method ] = function( url, data, callback, type ) {
 
-		// Shift arguments if data argument was omitted
+		// 如果没有传递data，则重设参数
 		if ( jQuery.isFunction( data ) ) {
 			type = type || callback;
 			callback = data;
 			data = undefined;
 		}
 
-		// The url can be an options object (which then must have .url)
+		// 调用ajax方法，如果url是一个对象则进行参数合并
 		return jQuery.ajax( jQuery.extend( {
 			url: url,
 			type: method,
