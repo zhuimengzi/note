@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title></title>
+        <style>
+            .box {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100px;
+                height: 100px;
+                background-color: red;
+            }
+            .box2 {
+                position: absolute;
+                top: 220px;
+                left: 200px;
+                width: 100px;
+                height: 100px;
+                background-color: green;
+            }
+        </style>
+        <script src="https://cdn.bootcss.com/react/15.4.2/react.min.js"></script>
+        <script src="https://cdn.bootcss.com/react/15.4.2/react-dom.min.js"></script>
+        <script src="https://cdn.bootcss.com/babel-standalone/6.22.1/babel.min.js"></script>
+    </head>
+    <body>
+        <div id="app">
+
+        </div>
+        <div id="app2">
+
+        </div>
+        <script type="text/babel">
+            class Drag extends React.Component {
+                constructor() {
+                    super();
+
+                    this.state = {
+                        x: 0,
+                        y: 0
+                    }
+                }
+
+                componentDidUpdate() {
+                    this.sty = {
+                        left: this.state.x + 'px',
+                        top: this.state.y + 'px'
+                    }
+                }
+
+                downFn(e) {
+                    this.startX = e.clientX - e.target.offsetLeft;
+                    this.startY = e.clientY - e.target.offsetTop;
+
+                    window.addEventListener('mousemove', this.__moveFn = this.moveFn.bind(this));
+                    window.addEventListener('mouseup', this.__upFn = this.upFn.bind(this));
+                }
+
+                moveFn(e) {
+                    this.targetX = e.clientX - this.startX;
+                    this.targetY = e.clientY - this.startY;
+
+                    this.setState({
+                        x: this.targetX,
+                        y: this.targetY
+                    });
+                }
+
+                upFn() {
+                    window.removeEventListener('mousemove', this.__moveFn);
+                    window.removeEventListener('mouseup', this.__upFn);
+                }
+
+                render() {
+                    return (
+                        <div className={
+                                this.props.styName
+                             }
+                             style={this.sty}
+                             onMouseDown={
+                                 this.downFn.bind(this)
+                             }></div>
+                    );
+                }
+            }
+
+            ReactDOM.render(
+                <Drag styName="box" />,
+                document.querySelector('#app')
+            );
+
+            ReactDOM.render(
+                <Drag styName="box2" />,
+                document.querySelector('#app2')
+            );
+        </script>
+    </body>
+</html>

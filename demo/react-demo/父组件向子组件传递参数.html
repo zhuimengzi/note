@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title></title>
+        <style>
+
+        </style>
+        <script src="https://cdn.bootcss.com/react/15.4.2/react.min.js"></script>
+        <script src="https://cdn.bootcss.com/react/15.4.2/react-dom.min.js"></script>
+        <script src="https://cdn.bootcss.com/babel-standalone/6.22.1/babel.min.js"></script>
+    </head>
+    <body>
+        <div id="app">
+
+        </div>
+        <script type="text/babel">
+            class Parent extends React.Component {
+                constructor () {
+                    super();
+
+                    this.state = {
+                        msg: 'hello component'
+                    };
+                }
+
+                reverseText () {
+                    this.setState({
+                        msg:this.state.msg.split(' ').reverse().join(' ')
+                    })
+                }
+
+                render () {
+                    return (
+                        <div onClick={this.reverseText.bind(this)}>
+                            <h2>父组件：{this.state.msg}</h2>
+                            <Child msg={this.state.msg} />
+                        </div>
+                    )
+                }
+            }
+
+            class Child extends React.Component {
+                constructor () {
+                    super();
+                }
+
+                render () {
+                    return (
+                        <h3>子组件：{this.props.msg}</h3>
+                    )
+                }
+            }
+
+            ReactDOM.render(
+                <Parent/>,
+                document.querySelector('#app')
+            )
+        </script>
+    </body>
+</html>

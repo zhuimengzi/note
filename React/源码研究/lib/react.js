@@ -1462,6 +1462,7 @@
                   * @param {*} props
                   * @internal
                   */
+                 // 对参数进行配置,并返回一个element对象
                  var ReactElement = function (type, key, ref, self, source, owner, props) {
                      var element = {
                          // This tag allow us to uniquely identify this as a React Element
@@ -1473,7 +1474,7 @@
                          ref: ref,
                          props: props,
  
-                         // Record the component responsible for creating this element.
+                         // 记录创建此元素的组件
                          _owner: owner
                      };
  
@@ -1528,6 +1529,7 @@
                   * Create and return a new ReactElement of the given type.
                   * See https://facebook.github.io/react/docs/top-level-api.html#react.createelement
                   */
+                 // 对参数进行调整
                  ReactElement.createElement = function (type, config, children) {
                      var propName;
  
@@ -1538,15 +1540,17 @@
                      var ref = null;
                      var self = null;
                      var source = null;
- 
+                     // 如果有config对象,则将config中的属性放到props对象中,另外将ref和key属性单独提取出来
                      if (config != null) {
-                         if (hasValidRef(config)) {
+                         // 校验ref不是来自父组件的props.ref
+                         if (hasValidRef(config)) {
                              ref = config.ref;
                          }
+                         // 校验key不是来自父组件的props.key
                          if (hasValidKey(config)) {
                              key = '' + config.key;
                          }
- 
+                         // 如果__self,source参数为undefined则转成null
                          self = config.__self === undefined ? null : config.__self;
                          source = config.__source === undefined ? null : config.__source;
                          // Remaining properties are added to a new props object
@@ -1559,6 +1563,8 @@
  
                      // Children can be more than one argument, and those are transferred onto
                      // the newly allocated props object.
+
+                     // 获取children,将children放到prpos对象中,如果children大于一个则将children转成数组
                      var childrenLength = arguments.length - 2;
                      if (childrenLength === 1) {
                          props.children = children;
@@ -1568,6 +1574,7 @@
                              childArray[i] = arguments[i + 2];
                          }
                          if ("development" !== 'production') {
+                             // 阻止修改现有属性的特性和值，并阻止添加新属性。
                              if (Object.freeze) {
                                  Object.freeze(childArray);
                              }
@@ -1575,6 +1582,7 @@
                          props.children = childArray;
                      }
  
+                     // 如果type上有默认属性则将默认属性复制到props中
                      // Resolve default props
                      if (type && type.defaultProps) {
                          var defaultProps = type.defaultProps;
@@ -1584,6 +1592,7 @@
                              }
                          }
                      }
+                     // 不允许向props添加key、ref属性，props是ReactElement除外
                      if ("development" !== 'production') {
                          if (key || ref) {
                              if (typeof props.$$typeof === 'undefined' || props.$$typeof !== REACT_ELEMENT_TYPE) {
@@ -1598,6 +1607,7 @@
                              }
                          }
                      }
+                     // 调用ReactElement创建元素
                      return ReactElement(type, key, ref, self, source, ReactCurrentOwner.current, props);
                  };
  
@@ -1906,11 +1916,13 @@
                  }
  
                  var ReactElementValidator = {
+                     // 判断参数是否符合规则,如果符合则返回一个元素对象
                      createElement: function (type, props, children) {
                          var validType = typeof type === 'string' || typeof type === 'function';
                          // We warn in this case but don't throw. We expect the element creation to
                          // succeed and there will likely be errors in render.
-                         if (!validType) {
+                         // 如果type不是字符串或函数,则报错
+                         if (!validType) {
                              if (typeof type !== 'function' && typeof type !== 'string') {
                                  var info = '';
                                  if (type === undefined || typeof type === 'object' && type !== null && Object.keys(

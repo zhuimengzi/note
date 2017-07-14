@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title></title>
+        <style>
+            .box {
+                width: 100px;
+                height: 100px;
+                background-color:red;
+            }
+        </style>
+        <script src="https://cdn.bootcss.com/react/15.4.2/react.min.js"></script>
+        <script src="https://cdn.bootcss.com/react/15.4.2/react-dom.min.js"></script>
+        <script src="https://cdn.bootcss.com/babel-standalone/6.22.1/babel.min.js"></script>
+    </head>
+    <body>
+        <div id="app">
+
+        </div>
+        <script type="text/babel">
+            class ToggleBox extends React.Component {
+                constructor() {
+                    super();
+
+                    this.state = {
+                        isShow: true
+                    };
+                }
+
+                toggle() {
+                    this.setState({
+                        isShow: !this.state.isShow
+                    });
+                }
+
+                render() {
+                    let isShow = this.state.isShow ? 'block' : 'none';
+                    return (
+                       <div onClick={this.toggle.bind(this)} className="box">
+                           <p style={{display:isShow}}>Toggle Box</p>
+                       </div>
+                    );
+                }
+            }
+            ReactDOM.render(
+                <ToggleBox />,
+                document.querySelector('#app')
+            );
+        </script>
+    </body>
+</html>
